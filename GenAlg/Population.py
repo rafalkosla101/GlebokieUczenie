@@ -1,6 +1,6 @@
 # File with implemented class representing single population
 
-from typing import List, Type
+from typing import List
 from Solution import Solution
 
 class Population:
@@ -40,7 +40,7 @@ class Population:
         """
         Returns best _population_size solutions from self and other.
         """
-        return sorted(self._population + other._population, key=lambda s: s.calculate_fitness())
+        return sorted(self._population + other._population, key=lambda s: s.calculate_fitness())[:self._population_size]
     
     def selection(self) -> List[Solution]:
         """
