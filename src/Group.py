@@ -2,7 +2,7 @@
 
 
 class Group:
-    def __init__(self, group_id: int, level, duration: int, number_of_students: int, teacher: int, classroom: int):
+    def __init__(self, group_id: int, level: int, duration: int, number_of_students: int, teacher: int, classroom: int):
         self.id = group_id
         self.level = level
         self.duration = duration
