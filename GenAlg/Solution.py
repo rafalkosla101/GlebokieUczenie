@@ -1,7 +1,8 @@
 # File with implemented class representing single solution
 
-from typing import List
+from typing import List, Dict, Tuple
 from abc import ABC, abstractmethod
+
 
 class Solution(ABC):
     @abstractmethod
@@ -36,3 +37,5 @@ class Solution(ABC):
         Performs crossover with 'other' and returns a List of two solutions.
         """
         pass
+
+

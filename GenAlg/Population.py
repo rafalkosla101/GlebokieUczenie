@@ -1,7 +1,9 @@
 # File with implemented class representing single population
 
 from typing import List
-from Solution import Solution
+# from Solution import Solution
+from GenAlg.Solution import Solution
+
 
 class Population:
     """

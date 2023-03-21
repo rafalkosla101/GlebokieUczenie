@@ -1,7 +1,8 @@
 # File with implemented universal class for solving genetic algorithm problem
 
 from typing import List
-from Population import Population, Solution
+# from Population import Population, Solution
+from GenAlg.Population import Population, Solution
 
 
 class GeneticAlgorithm:
@@ -46,3 +47,6 @@ class GeneticAlgorithm:
             current_population = new_population.choose_best_including_other(current_population)
         
         return best_solutions
+
+
+
