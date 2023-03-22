@@ -10,4 +10,7 @@ class Group:
         self.teacher = teacher
         self.classroom = classroom
 
+    def __str__(self):
+        return f'Group ID: {self.id}, Level: {self.level}, Students: {self.number_of_students}, Teacher: {self.teacher}, Classroom: {self.classroom}'
+
 

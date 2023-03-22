@@ -31,6 +31,7 @@ def create_groups(students: List[int], limit: int, possible_levels: List[int], d
             students_by_levels[level] -= limit
         if students_by_levels[level] > 0:
             groups.append(Group(groupid, level, duration, students_by_levels[level], None, None))
+            groupid += 1
     return groups
 
 
@@ -77,10 +78,11 @@ def random_initial_solution(students: List[int], limit: int, duration: int, clas
 
             key2 = (first_slot[0], first_slot[1] - i)
             if key2 in possible_first_slots.keys():
-                possible_first_slots[key2][0].remove(chosen_room)
-                possible_first_slots[key2][1].remove(chosen_teacher)
-                if not possible_first_slots[key2][0] or not possible_first_slots[key2][1]:
-                    possible_first_slots.pop(key2)
+                if i != 0:
+                    possible_first_slots[key2][0].remove(chosen_room)
+                    possible_first_slots[key2][1].remove(chosen_teacher)
+                    if not possible_first_slots[key2][0] or not possible_first_slots[key2][1]:
+                        possible_first_slots.pop(key2)
 
     return solution
 
@@ -93,8 +95,12 @@ if __name__ == '__main__':
     teacher = [Teacher({1: [1, 2, 3, 4, 5, 6], 2: [2, 3, 4, 5], 4: [1, 2, 3, 4]}), Teacher({2: [1, 2, 3, 4], 3: [2, 3, 4, 5], 5: [1, 2, 3, 4, 5, 6, 7, 8]})]
     working_hours = {1: [1, 2, 3, 4, 5, 6, 7, 8], 2: [1, 2, 3, 4, 5, 6, 7, 8], 3: [1, 2, 3, 4, 5, 6, 7, 8], 4: [1, 2, 3, 4, 5, 6, 7, 8], 5: [1, 2, 3, 4, 5, 6, 7, 8]}
     sol = random_initial_solution(students, limit, duration, classoom, teacher, working_hours)
-    print(sol)
+    #print(sol)
 
-
+    for timeslot in sol:
+        print("Slot:", timeslot)
+        for group in sol[timeslot]:
+            print(str(group[0]))
+        print()
 
 
