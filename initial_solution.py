@@ -78,11 +78,12 @@ def random_initial_solution(students: List[int], limit: int, duration: int, clas
 
             key2 = (first_slot[0], first_slot[1] - i)
             if key2 in possible_first_slots.keys():
-                if i != 0:
+                if chosen_room in possible_first_slots[key2][0]:
                     possible_first_slots[key2][0].remove(chosen_room)
+                if chosen_teacher in possible_first_slots[key2][1]:
                     possible_first_slots[key2][1].remove(chosen_teacher)
-                    if not possible_first_slots[key2][0] or not possible_first_slots[key2][1]:
-                        possible_first_slots.pop(key2)
+                if not possible_first_slots[key2][0] or not possible_first_slots[key2][1]:
+                    possible_first_slots.pop(key2)
 
     return solution
 
