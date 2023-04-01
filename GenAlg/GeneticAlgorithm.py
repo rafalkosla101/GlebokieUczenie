@@ -1,7 +1,6 @@
 # File with implemented universal class for solving genetic algorithm problem
 
 from typing import List
-# from Population import Population, Solution
 from GenAlg.Population import Population, Solution
 
 
@@ -30,7 +29,6 @@ class GeneticAlgorithm:
             for _ in range(0, self._population_size, 2):
 
                 # Selection
-                # TODO: Czy możemy założyć że wybieramy zawsze 2 rozwiązania?
                 selected_a, selected_b = current_population.selection()
 
                 # Crossover

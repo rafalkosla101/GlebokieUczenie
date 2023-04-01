@@ -1,13 +1,12 @@
 # File with implemented class representing single solution
 
-from typing import List, Dict, Tuple
+from typing import List
 from abc import ABC, abstractmethod
 
 
 class Solution(ABC):
     @abstractmethod
     def __init__(self):
-        self.fitness_score = None
         self.solution = None
 
     @abstractmethod
