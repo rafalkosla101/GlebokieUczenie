@@ -8,12 +8,17 @@ from src.TimeSlot import TimeSlot
 from typing import List, Dict, Tuple
 
 import random
+import matplotlib.pyplot as plt
+import numpy as np
+
+from matplotlib import patches
 from copy import deepcopy
 
 Day = int
 Slot = int
 Room = int
 Lector = int
+Solution = Dict[Tuple[Day, Slot], List[Tuple[Group, int]]]
 
 
 def create_groups(students: List[int], limit: int, possible_levels: List[int], duration: int) -> List[Group]:
@@ -136,6 +141,83 @@ def random_initial_solution(students: List[int], limit: int, duration: int, clas
     return solution, possible_slots
 
 
+def crossover(sol1: Solution, sol2: Solution) -> Tuple[Solution, Solution]:
+    """
+    Function to perform the crossover of two solutions
+    :param sol1: First solution
+    :param sol2: Second solution
+    """
+
+    new_sol1 = {}
+    new_sol2 = {}
+
+    day1, day2 = random.randrange(1, 6), random.randrange(1, 6)
+
+    for (day, slot), group_info in sol1.items():
+        if day == day1:
+            new_sol2[(day, slot)] = group_info
+
+        else:
+            new_sol1[(day, slot)] = group_info
+
+    for (day, slot), group_info in sol2.items():
+        if day == day2:
+            new_sol1[(day, slot)] = group_info
+
+        else:
+            new_sol2[(day, slot)] = group_info
+
+    return new_sol1, new_sol2
+
+
+def display_solutions(sol1: Solution, sol2: Solution, working_hours: Dict[int, List[int]]) -> None:
+    """
+    Function to display solutions
+    :param sol1: First solution
+    :param sol2: Second solution
+    :param working_hours: Working hours
+    """
+
+    max_slot = max([slot for day in range(1, 5 + 1) for slot in working_hours[day]])
+    groups1 = list(set([group.id for timeslot in sol1 for group, _ in sol1[timeslot]]))
+    groups2 = list(set([group.id for timeslot in sol2 for group, _ in sol2[timeslot]]))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    for day in range(1, 5 + 1):
+        for slot in range(1, max_slot + 1):
+            rect = patches.Rectangle((0, -30 * ((day - 1) * max_slot + slot - 1)), 30, -30, edgecolor="black", facecolor="blue", linewidth=1)
+            ax.add_patch(rect)
+            rx, ry = rect.get_xy()
+            cx = rx + rect.get_width() / 2.0
+            cy = ry + rect.get_height() / 2.0
+            ax.annotate(f"({day}, {slot})", (cx, cy), color="black", fontsize=5, ha="center", va="center")
+
+            if (day, slot) in sol1:
+                for group, _ in sol1[(day, slot)]:
+                    rect = patches.Rectangle((30 * (groups1.index(group.id) + 1), -30 * ((day - 1) * max_slot + slot)), 30, -30, edgecolor="black", facecolor="orange", linewidth=1)
+                    ax.add_patch(rect)
+                    rx, ry = rect.get_xy()
+                    cx = rx + rect.get_width() / 2.0
+                    cy = ry + rect.get_height() / 2.0
+                    ax.annotate(str(group), (cx, cy), color="black", fontsize=5, ha="center", va="center")
+
+            if (day, slot) in sol2:
+                for group, _ in sol2[(day, slot)]:
+                    rect = patches.Rectangle((30 * (groups2.index(group.id) + 1 + len(groups1)), -30 * ((day - 1) * max_slot + slot)), 30, -30, edgecolor="black", facecolor="green", linewidth=1)
+                    ax.add_patch(rect)
+                    rx, ry = rect.get_xy()
+                    cx = rx + rect.get_width() / 2.0
+                    cy = ry + rect.get_height() / 2.0
+                    ax.annotate(str(group), (cx, cy), color="black", fontsize=5, ha="center", va="center")
+
+    plt.axvline(x=30 * (1 + len(groups1)))
+    plt.xlim([-5, 30 * (len(groups1) + len(groups2) + 1)])
+    plt.ylim([-30 * (max_slot * 5 + 1), 5])
+    plt.show()
+
+
 if __name__ == '__main__':
     students = [1, 1, 2, 3, 1, 2, 3, 1, 2, 3, 3, 3, 2, 1, 1, 1, 1]
     limit = 3
@@ -143,13 +225,8 @@ if __name__ == '__main__':
     classoom = [Classroom(), Classroom(), Classroom()]
     teacher = [Teacher({1: [1, 2, 3, 4, 5, 6], 2: [2, 3, 4, 5], 4: [1, 2, 3, 4]}), Teacher({2: [1, 2, 3, 4], 3: [2, 3, 4, 5], 5: [1, 2, 3, 4, 5, 6, 7, 8]})]
     working_hours = {1: [1, 2, 3, 4, 5, 6, 7, 8], 2: [1, 2, 3, 4, 5, 6, 7, 8], 3: [1, 2, 3, 4, 5, 6, 7, 8], 4: [1, 2, 3, 4, 5, 6, 7, 8], 5: [1, 2, 3, 4, 5, 6, 7, 8]}
-    sol, poss_slots = random_initial_solution(students, limit, duration, classoom, teacher, working_hours)
-
-    for timeslot in sol:
-        print("Slot:", timeslot)
-        for group in sol[timeslot]:
-            print(str(group[1]) + ' ' + str(group[0]))
-        print()
-
-
-
+    sol1, poss_slots1 = random_initial_solution(students, limit, duration, classoom, teacher, working_hours)
+    sol2, poss_slots2 = random_initial_solution(students, limit, duration, classoom, teacher, working_hours)
+    display_solutions(sol1, sol2, working_hours)
+    new_sol1, new_sol2 = crossover(sol1, sol2)
+    display_solutions(new_sol1, new_sol2, working_hours)

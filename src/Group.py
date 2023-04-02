@@ -12,6 +12,7 @@ class Group:
         self.classroom = classroom
 
     def __str__(self):
-        return f'Group ID: {self.id}, Level: {self.level}, Students: {self.number_of_students}, Teacher: {self.teacher}, Classroom: {self.classroom}'
+        return f"G: {self.id}, L: {self.level}, S: {self.number_of_students}, T: {self.teacher}, C: {self.classroom}"
+        # return f'Group ID: {self.id}, Level: {self.level}, Students: {self.number_of_students}, Teacher: {self.teacher}, Classroom: {self.classroom}'
 
 
