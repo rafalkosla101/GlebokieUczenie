@@ -4,6 +4,7 @@ from src.Student import Student
 from src.Group import Group
 from src.TimeSlot import TimeSlot
 
+
 from typing import List, Dict, Tuple
 
 import random
@@ -116,8 +117,10 @@ def random_initial_solution(students: List[int], limit: int, duration: int, clas
                 possible_slots.pop(key)
 
             if key in possible_first_slots.keys():
-                possible_first_slots[key][0].remove(chosen_room)
-                possible_first_slots[key][1].remove(chosen_teacher)
+                if chosen_room in possible_first_slots[key][0]:
+                    possible_first_slots[key][0].remove(chosen_room)
+                if chosen_teacher in possible_first_slots[key][1]:
+                    possible_first_slots[key][1].remove(chosen_teacher)
                 if not possible_first_slots[key][0] or not possible_first_slots[key][1]:
                     possible_first_slots.pop(key)
 
@@ -130,7 +133,7 @@ def random_initial_solution(students: List[int], limit: int, duration: int, clas
                 if not possible_first_slots[key2][0] or not possible_first_slots[key2][1]:
                     possible_first_slots.pop(key2)
 
-    return solution
+    return solution, possible_slots
 
 
 if __name__ == '__main__':
@@ -140,12 +143,13 @@ if __name__ == '__main__':
     classoom = [Classroom(), Classroom(), Classroom()]
     teacher = [Teacher({1: [1, 2, 3, 4, 5, 6], 2: [2, 3, 4, 5], 4: [1, 2, 3, 4]}), Teacher({2: [1, 2, 3, 4], 3: [2, 3, 4, 5], 5: [1, 2, 3, 4, 5, 6, 7, 8]})]
     working_hours = {1: [1, 2, 3, 4, 5, 6, 7, 8], 2: [1, 2, 3, 4, 5, 6, 7, 8], 3: [1, 2, 3, 4, 5, 6, 7, 8], 4: [1, 2, 3, 4, 5, 6, 7, 8], 5: [1, 2, 3, 4, 5, 6, 7, 8]}
-    sol = random_initial_solution(students, limit, duration, classoom, teacher, working_hours)
+    sol, poss_slots = random_initial_solution(students, limit, duration, classoom, teacher, working_hours)
 
     for timeslot in sol:
         print("Slot:", timeslot)
         for group in sol[timeslot]:
-            print(str(group[0]))
+            print(str(group[1]) + ' ' + str(group[0]))
         print()
+
 
 
