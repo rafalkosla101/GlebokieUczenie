@@ -68,7 +68,7 @@ class SolutionConcrete(Solution):
         possible_slots_to_change = list(new_sol.keys())
         while possible_slots_to_change:
             slot_to_change = random.choice(possible_slots_to_change)
-            possible_group_to_change = new_sol[slot_to_change]
+            possible_group_to_change = copy.copy(new_sol[slot_to_change])
             while possible_group_to_change:
                 group_to_change, slot_number = random.choice(possible_group_to_change)
                 slot_before_group = (slot_to_change[0], slot_to_change[1] - slot_number)
@@ -121,6 +121,39 @@ class SolutionConcrete(Solution):
                 return SolutionConcrete(new_sol, new_poss_slots)
             possible_slots_to_change.remove(slot_to_change)
         return SolutionConcrete(new_sol, new_poss_slots)
+
+    def mutate_change_teacher(self):
+        new_sol = copy.deepcopy(self.solution)
+        new_poss_slot = copy.deepcopy(self.possible_slots)
+        possible_slots_to_change = list(new_sol.keys())
+        while possible_slots_to_change:
+            slot_to_change = random.choice(possible_slots_to_change)
+            possible_group_to_change = copy.copy(new_sol[slot_to_change])
+            while possible_group_to_change:
+                group_to_change, slot_number = random.choice(possible_group_to_change)
+                first_slot = (slot_to_change[0], slot_to_change[1] - slot_number + 1)
+                last_slot = (first_slot[0], first_slot[1] + group_to_change.duration - 1)
+                first_slot_poss_teacher = []
+                if first_slot in new_poss_slot.keys():
+                    first_slot_poss_teacher = new_poss_slot[first_slot][1]
+                poss_teachers = []
+                for teacher in first_slot_poss_teacher:
+                    if last_slot in new_poss_slot.keys() and teacher in new_poss_slot[last_slot][1]:
+                        poss_teachers.append(teacher)
+                if not poss_teachers:
+                    possible_group_to_change.remove((group_to_change, slot_number))
+                    continue
+                chosen_teacher = random.choice(poss_teachers)
+                prev_teacher = group_to_change.teacher
+                group_to_change.teacher = chosen_teacher
+                for i in range(group_to_change.duration):
+                    new_poss_slot[(first_slot[0], first_slot[1] + i)][1].append(prev_teacher)
+                    new_poss_slot[(first_slot[0], first_slot[1] + i)][1].remove(chosen_teacher)
+                return SolutionConcrete(new_sol, new_poss_slot)
+            possible_slots_to_change.remove(slot_to_change)
+        return SolutionConcrete(new_sol, new_poss_slot)
+
+
 
 
 
