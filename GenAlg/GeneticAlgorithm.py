@@ -1,7 +1,7 @@
 # File with implemented universal class for solving genetic algorithm problem
 
-from typing import List
 from GenAlg.Population import Population, Solution
+from GenAlg.shared_types import List
 
 
 class GeneticAlgorithm:

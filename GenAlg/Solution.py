@@ -1,13 +1,5 @@
 # File with implemented class representing single solution
-
-from typing import List, Dict, Tuple
-
-from src.Group import Group
-from initial_solution import Day, Slot, Room, Lector
-from enum import Enum
-
-import random
-import copy
+from GenAlg.shared_types import *
 
 
 class Mutation(Enum):
@@ -57,9 +49,9 @@ class Solution():
         Performs crossover with 'other' and returns a Tuple of two solutions.
         """
         if self.crossover_method == Crossover.ALL_DAY:
-            return self._crossover_all_day()
+            return self._crossover_all_day(other)
         elif self.crossover_method == Crossover.SINGLE_BLOCK:
-            return self._crossover_single_block()
+            return self._crossover_single_block(other)
         
     def _mutate_shift(self) -> 'Solution':
         new_sol = copy.deepcopy(self.solution)
@@ -180,5 +172,13 @@ class Solution():
 
         new_sol1 = Solution(new_sol1, self.possible_slots, self.mutation_method, self.crossover_method)
         new_sol2 = Solution(new_sol2, self.possible_slots, self.mutation_method, self.crossover_method)
-        
+
         return new_sol1, new_sol2
+    
+    def _crossover_single_block(self, sol2: 'Solution') -> Tuple['Solution', 'Solution']:
+        """
+        Function to perform the crossover of two solutions
+        :param self: First solution
+        :param sol2: Second solution
+        """
+        pass

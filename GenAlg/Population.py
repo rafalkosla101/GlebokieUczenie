@@ -1,10 +1,7 @@
 # File with implemented class representing single population
 
-from typing import List
 from GenAlg.Solution import Solution
-from enum import Enum
-import random
-
+from GenAlg.shared_types import *
 
 class Selection(Enum):
     """
