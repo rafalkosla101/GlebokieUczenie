@@ -1,68 +1,67 @@
 # File with implemented class representing single solution
 
 from typing import List, Dict, Tuple
-from abc import ABC, abstractmethod
 
 from src.Group import Group
 from initial_solution import Day, Slot, Room, Lector
+from enum import Enum
 
 import random
 import copy
 
-class Solution(ABC):
-    @abstractmethod
-    def __init__(self):
-        self.fitness_score = None
-        self.solution = None
 
-    @abstractmethod
+class Mutation(Enum):
+    """
+    Enum of mutation methods
+    """
+    SHIFT = 0
+    CHANGE_TEACHER = 1
+
+
+class Crossover(Enum):
+    """
+    Enum of crossover methods
+    """
+    ALL_DAY = 0
+    SINGLE_BLOCK = 1
+
+
+class Solution():
+    def __init__(self,
+                 solution: Dict[Tuple[Day, Slot], List[Tuple[Group, int]]], 
+                 possible_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]],
+                 mutation_method: Mutation=Mutation.SHIFT,
+                 crossover_method: Crossover=Crossover.ALL_DAY):
+        self.solution = solution
+        self.possible_slots = possible_slots
+        self.mutation_method = mutation_method
+        self.crossover_method = crossover_method
+
     def calculate_fitness(self) -> float:
         """
         Calculates fitness and returns it.
         """
         pass
 
-    @abstractmethod
-    def is_feasible(self) -> bool:
-        """
-        Checks if solution is feasible.
-        """
-        pass
-
-    @abstractmethod
     def mutate(self) -> 'Solution':
         """
         Copies solution and returns mutated copy.
         """
-        pass
+        if self.mutation_method == Mutation.SHIFT:
+            return self._mutate_shift()
+        elif self.mutation_method == Mutation.CHANGE_TEACHER:
+            return self._mutate_change_teacher()
 
-    @abstractmethod
-    def crossover(self, other: 'Solution') -> List['Solution']:
+    def crossover(self, other: 'Solution') -> Tuple['Solution', 'Solution']:
         """
-        Performs crossover with 'other' and returns a List of two solutions.
+        Performs crossover with 'other' and returns a Tuple of two solutions.
         """
-        pass
-
-
-class SolutionConcrete(Solution):
-    def __init__(self, solution: Dict[Tuple[Day, Slot], List[Tuple[Group, int]]], possible_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]]):
-        super().__init__()
-        self.solution = solution
-        self.possible_slots = possible_slots
-
-    def calculate_fitness(self) -> float:
-        return None
-
-    def is_feasible(self) -> bool:
-        return None
-
-    def mutate(self) -> 'SolutionConcrete':
-        return None
-
-    def crossover(self, other: 'SolutionConcrete') -> List['SolutionConcrete']:
-        return None
-
-    def mutate_shift(self) -> 'SolutionConcrete':
+        if self.crossover_method == Crossover.ALL_DAY:
+            return self._crossover_all_day()
+        elif self.crossover_method == Crossover.SINGLE_BLOCK:
+            return self._crossover_single_block()
+        
+    def _mutate_shift(self) -> 'Solution':
         new_sol = copy.deepcopy(self.solution)
         new_poss_slots = copy.deepcopy(self.possible_slots)
         possible_slots_to_change = list(new_sol.keys())
@@ -118,11 +117,11 @@ class SolutionConcrete(Solution):
                 new_poss_slots[new_slot][1].remove(group_to_change.teacher)
                 if not new_poss_slots[new_slot][0] or not new_poss_slots[new_slot][1]:
                     new_poss_slots.pop(new_slot)
-                return SolutionConcrete(new_sol, new_poss_slots)
+                return Solution(new_sol, new_poss_slots)
             possible_slots_to_change.remove(slot_to_change)
-        return SolutionConcrete(new_sol, new_poss_slots)
-
-    def mutate_change_teacher(self):
+        return Solution(new_sol, new_poss_slots)
+    
+    def _mutate_change_teacher(self) -> 'Solution':
         new_sol = copy.deepcopy(self.solution)
         new_poss_slot = copy.deepcopy(self.possible_slots)
         possible_slots_to_change = list(new_sol.keys())
@@ -149,12 +148,37 @@ class SolutionConcrete(Solution):
                 for i in range(group_to_change.duration):
                     new_poss_slot[(first_slot[0], first_slot[1] + i)][1].append(prev_teacher)
                     new_poss_slot[(first_slot[0], first_slot[1] + i)][1].remove(chosen_teacher)
-                return SolutionConcrete(new_sol, new_poss_slot)
+                return Solution(new_sol, new_poss_slot)
             possible_slots_to_change.remove(slot_to_change)
-        return SolutionConcrete(new_sol, new_poss_slot)
+        return Solution(new_sol, new_poss_slot)
+    
+    def _crossover_all_day(self, sol2: 'Solution') -> Tuple['Solution', 'Solution']:
+        """
+        Function to perform the crossover of two solutions
+        :param self: First solution
+        :param sol2: Second solution
+        """
 
+        new_sol1 = {}
+        new_sol2 = {}
 
+        day1, day2 = random.randrange(1, 6), random.randrange(1, 6)
 
+        for (day, slot), group_info in self.solution.items():
+            if day == day1:
+                new_sol2[(day, slot)] = group_info
 
+            else:
+                new_sol1[(day, slot)] = group_info
 
+        for (day, slot), group_info in sol2.solution.items():
+            if day == day2:
+                new_sol1[(day, slot)] = group_info
 
+            else:
+                new_sol2[(day, slot)] = group_info
+
+        new_sol1 = Solution(new_sol1, self.possible_slots, self.mutation_method, self.crossover_method)
+        new_sol2 = Solution(new_sol2, self.possible_slots, self.mutation_method, self.crossover_method)
+        
+        return new_sol1, new_sol2

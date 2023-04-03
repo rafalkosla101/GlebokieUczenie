@@ -3,6 +3,7 @@ from src.Classroom import Classroom
 from src.Student import Student
 from src.Group import Group
 from src.TimeSlot import TimeSlot
+from GenAlg.Solution import Solution
 
 
 from typing import List, Dict, Tuple
@@ -18,7 +19,7 @@ Day = int
 Slot = int
 Room = int
 Lector = int
-Solution = Dict[Tuple[Day, Slot], List[Tuple[Group, int]]]
+#Solution = Dict[Tuple[Day, Slot], List[Tuple[Group, int]]]
 
 
 def create_groups(students: List[int], limit: int, possible_levels: List[int], duration: int) -> List[Group]:
@@ -141,42 +142,15 @@ def random_initial_solution(students: List[int], limit: int, duration: int, clas
     return solution, possible_slots
 
 
-def crossover(sol1: Solution, sol2: Solution) -> Tuple[Solution, Solution]:
-    """
-    Function to perform the crossover of two solutions
-    :param sol1: First solution
-    :param sol2: Second solution
-    """
-
-    new_sol1 = {}
-    new_sol2 = {}
-
-    day1, day2 = random.randrange(1, 6), random.randrange(1, 6)
-
-    for (day, slot), group_info in sol1.items():
-        if day == day1:
-            new_sol2[(day, slot)] = group_info
-
-        else:
-            new_sol1[(day, slot)] = group_info
-
-    for (day, slot), group_info in sol2.items():
-        if day == day2:
-            new_sol1[(day, slot)] = group_info
-
-        else:
-            new_sol2[(day, slot)] = group_info
-
-    return new_sol1, new_sol2
-
-
-def display_solutions(sol1: Solution, sol2: Solution, working_hours: Dict[int, List[int]]) -> None:
+def display_solutions(solution1: Solution, solution2: Solution, working_hours: Dict[int, List[int]]) -> None:
     """
     Function to display solutions
     :param sol1: First solution
     :param sol2: Second solution
     :param working_hours: Working hours
     """
+    sol1 = solution1.solution
+    sol2 = solution2.solution
 
     max_slot = max([slot for day in range(1, 5 + 1) for slot in working_hours[day]])
     groups1 = list(set([group.id for timeslot in sol1 for group, _ in sol1[timeslot]]))
@@ -225,8 +199,10 @@ if __name__ == '__main__':
     classoom = [Classroom(), Classroom(), Classroom()]
     teacher = [Teacher({1: [1, 2, 3, 4, 5, 6], 2: [2, 3, 4, 5], 4: [1, 2, 3, 4]}), Teacher({2: [1, 2, 3, 4], 3: [2, 3, 4, 5], 5: [1, 2, 3, 4, 5, 6, 7, 8]})]
     working_hours = {1: [1, 2, 3, 4, 5, 6, 7, 8], 2: [1, 2, 3, 4, 5, 6, 7, 8], 3: [1, 2, 3, 4, 5, 6, 7, 8], 4: [1, 2, 3, 4, 5, 6, 7, 8], 5: [1, 2, 3, 4, 5, 6, 7, 8]}
-    sol1, poss_slots1 = random_initial_solution(students, limit, duration, classoom, teacher, working_hours)
-    sol2, poss_slots2 = random_initial_solution(students, limit, duration, classoom, teacher, working_hours)
+    solution1, poss_slots1 = random_initial_solution(students, limit, duration, classoom, teacher, working_hours)
+    solution2, poss_slots2 = random_initial_solution(students, limit, duration, classoom, teacher, working_hours)
+    sol1 = Solution(solution1, poss_slots1)
+    sol2 = Solution(solution2, poss_slots2)
     display_solutions(sol1, sol2, working_hours)
-    new_sol1, new_sol2 = crossover(sol1, sol2)
+    new_sol1, new_sol2 = sol1.crossover(sol2)
     display_solutions(new_sol1, new_sol2, working_hours)
