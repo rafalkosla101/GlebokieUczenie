@@ -45,6 +45,3 @@ class GeneticAlgorithm:
             current_population = new_population.choose_best_including_other(current_population)
         
         return best_solutions
-
-
-
