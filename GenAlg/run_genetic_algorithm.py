@@ -21,16 +21,10 @@ def prepare_students_list() -> List:
 def prepare_teachers_list() -> List:
     """
     Extracts data from CSV with teachers information.
-
+    Returns list of dictionaries
     """
     csv_df = pd.read_csv("data-generation/teachers.csv", delimiter=',', index_col=0)
-    teachers_list = []
-    for col in csv_df.columns:
-        teacher_dict = {}
-        for day_id in range(len(csv_df)):
-            teacher_dict[day_id + 1] = csv_df[col].iloc[day_id]
-        teachers_list.append(teacher_dict)
-    
+    teachers_list = [{day_id + 1: csv_df[col].iloc[day_id] for day_id in range(len(csv_df))} for col in csv_df.columns]
     return teachers_list
 
 
