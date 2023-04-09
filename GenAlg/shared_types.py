@@ -11,6 +11,31 @@ Room = int
 Lector = int
 
 
+class Selection(Enum):
+    """
+    Enum of selection types
+    """
+    BEST = 0
+    ROULETTE = 1
+    TOURNAMENT = 2
+
+
+class Mutation(Enum):
+    """
+    Enum of mutation methods
+    """
+    SHIFT = 0
+    CHANGE_TEACHER = 1
+
+
+class Crossover(Enum):
+    """
+    Enum of crossover methods
+    """
+    ALL_DAY = 0
+    SINGLE_BLOCK = 1
+
+
 class Group:
     def __init__(self, group_id: int, level: int, duration: int, number_of_students: Dict[int, int], teacher: int, classroom: int):
         self.id = group_id

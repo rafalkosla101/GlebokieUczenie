@@ -2,6 +2,7 @@ from GenAlg.Solution import *
 from GenAlg.GeneticAlgorithm import *
 from GenAlg.Population import *
 from GenAlg.initial_solution import *
+from GenAlg.run_genetic_algorithm import run_genetic_alorithm
 
 
 if __name__ == '__main__':
@@ -18,3 +19,4 @@ if __name__ == '__main__':
     display_solutions(sol1, sol2, working_hours)
     new_sol1, new_sol2 = sol1.crossover(sol2)
     display_solutions(new_sol1, new_sol2, working_hours)
+

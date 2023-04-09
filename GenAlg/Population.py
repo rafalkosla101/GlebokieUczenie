@@ -3,14 +3,6 @@
 from GenAlg.Solution import Solution
 from GenAlg.shared_types import *
 
-class Selection(Enum):
-    """
-    Enum of selection types
-    """
-    BEST = 0
-    ROULETTE = 1
-    TOURNAMENT = 2
-
 
 class Population:
     """

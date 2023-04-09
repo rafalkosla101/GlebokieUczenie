@@ -24,7 +24,7 @@ class GeneticAlgorithm:
         for _ in range(self._n_generations):
             current_population.sort_by_fitness()
             best_solutions.append(current_population.get_best_solution())
-            new_population = Population([])
+            new_population = Population([], self._initial_population._selection_type)
 
             for _ in range(0, self._population_size, 2):
 
