@@ -2,7 +2,7 @@
 from GenAlg.shared_types import *
 
 
-class Solution():
+class Solution:
     def __init__(self,
                  solution: Dict[Tuple[Day, Slot], List[Tuple[Group, int]]], 
                  possible_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]],
@@ -13,11 +13,51 @@ class Solution():
         self.mutation_method = mutation_method
         self.crossover_method = crossover_method
 
-    def calculate_fitness(self) -> float:
+    def calculate_fitness(self, teacher_info: List[Teacher], beyond_hours_penalty: float, breaks_penalty: float, improper_level_penalty: float) -> float:
         """
         Calculates fitness and returns it.
         """
-        pass
+        # Liczba slotów przydzielonych poza preferowanymi godzinami pracy lektora
+        slots_beyond_preferred_hours = 0
+        for (day, slot), group_info in self.solution.items():
+            available_teachers = [t.id for t in teacher_info if
+                                  (day in t.preferred_hours.keys() and slot in t.preferred_hours[day])]
+            for group in group_info:
+                if group[0].teacher not in available_teachers:
+                    slots_beyond_preferred_hours += 1
+
+        # Zbiór okienek pomiędzy zajęciami
+        total_breaks = 0
+        teacher_working_hours: Dict[Lector, List[Tuple[Day, Slot]]] = {}
+        for (day, slot), group_info in self.solution.items():
+            for group in group_info:
+                if group[0].teacher not in teacher_working_hours.keys():
+                    teacher_working_hours[group[0].teacher] = []
+                teacher_working_hours[group[0].teacher].append((day, slot))
+                teacher_working_hours[group[0].teacher].sort()
+
+        for lector, slots in teacher_working_hours.items():
+            for day in range(1, 6):
+                current_slots = []
+                for slot in slots:
+                    if slot[0] == day:
+                        current_slots.append(slot[1])
+                if current_slots:
+                    first_slot = min(current_slots)
+                    last_slot = max(current_slots)
+                    slots_spent_at_school = [i for i in range(first_slot, last_slot + 1)]
+                    total_breaks += len(slots_spent_at_school) - len(current_slots)
+
+        # Uczeń przypisany do grupy o innym poziomie niż preferowany
+        improper_group = 0
+        for _, group_info in self.solution.items():
+            for group in group_info:
+                for student_level in group[0].number_of_students.keys():
+                    if group[0].level != student_level:
+                        improper_group += group[0].number_of_students[student_level]
+
+        return beyond_hours_penalty * slots_beyond_preferred_hours + breaks_penalty * total_breaks + improper_level_penalty * improper_group
+
 
     def mutate(self) -> 'Solution':
         """
