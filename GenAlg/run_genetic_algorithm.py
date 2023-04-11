@@ -1,41 +1,10 @@
-import pandas as pd
-import json
-
 from GenAlg.shared_types import *
 from GenAlg.GeneticAlgorithm import *
 from GenAlg.initial_solution import *
+from data_generation.generate_data import *
 
 
-def prepare_students_list() -> List:
-    """
-    Extracts data from CSV with students information.
-    Gets only second value from tuples (group nr) and skips first element (it's column name). 
-    Returns data in List.
-    """
-    csv_df = pd.read_csv("data-generation/students.csv", delimiter=',', index_col=0)
-    students_list = list(csv_df["student_id"].values)
-    
-    return students_list
-
-
-def prepare_teachers_list() -> List:
-    """
-    Extracts data from CSV with teachers information.
-    Returns list of dictionaries
-    """
-    csv_df = pd.read_csv("data-generation/teachers.csv", delimiter=',', index_col=0)
-    teachers_list = [Teacher({day_id + 1: csv_df[col].iloc[day_id] for day_id in range(len(csv_df))}) for col in csv_df.columns]
-    return teachers_list
-
-
-def read_school_config() -> List:
-    with open("data-generation/school_config.json") as f:
-        config_dict = json.load(f)
-
-    return config_dict
-
-
-def run_genetic_alorithm(population_size: int,
+def run_genetic_algorithm_function(population_size: int,
                          n_generations: int, 
                          selection_type: Selection, 
                          mutation_type: Mutation,

@@ -1,5 +1,7 @@
 # File with implemented class representing single solution
 from GenAlg.shared_types import *
+import pandas as pd
+from data_generation.generate_data import *
 
 
 class Solution:
@@ -13,15 +15,15 @@ class Solution:
         self.mutation_method = mutation_method
         self.crossover_method = crossover_method
 
-    def calculate_fitness(self, teacher_info: List[Teacher], beyond_hours_penalty: float, breaks_penalty: float, improper_level_penalty: float) -> float:
+    def calculate_fitness(self) -> float:
         """
         Calculates fitness and returns it.
         """
+        teacher_info = prepare_teachers_list()
         # Liczba slotów przydzielonych poza preferowanymi godzinami pracy lektora
         slots_beyond_preferred_hours = 0
         for (day, slot), group_info in self.solution.items():
-            available_teachers = [t.id for t in teacher_info if
-                                  (day in t.preferred_hours.keys() and slot in t.preferred_hours[day])]
+            available_teachers = [t.id for t in teacher_info if (day in t.preferred_hours.keys() and t.preferred_hours[day] and str(slot) in t.preferred_hours[day])]
             for group in group_info:
                 if group[0].teacher not in available_teachers:
                     slots_beyond_preferred_hours += 1
@@ -55,9 +57,7 @@ class Solution:
                 for student_level in group[0].number_of_students.keys():
                     if group[0].level != student_level:
                         improper_group += group[0].number_of_students[student_level]
-
-        return beyond_hours_penalty * slots_beyond_preferred_hours + breaks_penalty * total_breaks + improper_level_penalty * improper_group
-
+        return BEYOND_HOURS_PENALTY * slots_beyond_preferred_hours + BREAKS_PENALTY * total_breaks + IMPROPER_LEVEL_PENALTY * improper_group
 
     def mutate(self) -> 'Solution':
         """

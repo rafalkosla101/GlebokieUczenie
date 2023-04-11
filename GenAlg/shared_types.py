@@ -3,7 +3,16 @@ from enum import Enum
 import random
 import copy
 
+# -------------- PATHS -----------
+# Ścieżka do folderu data_generation
+MY_PATH = "F:/AGH/GlebokieUczenie/"
+
 SEATING_CAPACITY = 20
+
+# Fitness parameters
+BEYOND_HOURS_PENALTY = 1
+BREAKS_PENALTY = 1
+IMPROPER_LEVEL_PENALTY = 1
 
 Day = int
 Slot = int
@@ -79,3 +88,8 @@ class Teacher:
             self.preferred_hours[day].append(slot_id)
         else:
             self.preferred_hours[day] = [slot_id]
+
+    def delete_empty_lists(self):
+        new_dict = {key: val for key, val in self.preferred_hours.items() if val != '[]'}
+        self.preferred_hours = new_dict
+
