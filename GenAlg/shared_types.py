@@ -3,9 +3,6 @@ from enum import Enum
 import random
 import copy
 
-# -------------- PATHS -----------
-# Ścieżka do folderu data_generation
-MY_PATH = "F:/AGH/GlebokieUczenie/"
 
 SEATING_CAPACITY = 20
 

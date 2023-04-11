@@ -4,7 +4,7 @@ from GenAlg.initial_solution import *
 from data_generation.generate_data import *
 
 
-def run_genetic_algorithm_function(population_size: int,
+def run_genetic_algorithm(population_size: int,
                          n_generations: int, 
                          selection_type: Selection, 
                          mutation_type: Mutation,

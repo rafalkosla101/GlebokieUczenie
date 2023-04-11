@@ -8,8 +8,8 @@ class Solution:
     def __init__(self,
                  solution: Dict[Tuple[Day, Slot], List[Tuple[Group, int]]], 
                  possible_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]],
-                 mutation_method: Mutation=Mutation.SHIFT,
-                 crossover_method: Crossover=Crossover.ALL_DAY):
+                 mutation_method: Mutation,
+                 crossover_method: Crossover):
         self.solution = solution
         self.possible_slots = possible_slots
         self.mutation_method = mutation_method

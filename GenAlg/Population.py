@@ -9,7 +9,7 @@ class Population:
     Default class for Population.
     """
 
-    def __init__(self, population: List[Solution], selection_type: Selection=Selection.ROULETTE):
+    def __init__(self, population: List[Solution], selection_type: Selection):
         self._population = population
         self._population_size = len(population)
         self._selection_type = selection_type
