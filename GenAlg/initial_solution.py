@@ -70,13 +70,13 @@ def connect_groups(groups: List[Group], limit: int, connection_probability: floa
     return groups
 
 
-def random_initial_solution(students: List[int], limit: int, duration: int, classroom: List[Classroom], teacher: List[Teacher], working_hours: Dict[Day, List[Slot]]):
+def random_initial_solution(students: List[int], limit: int, duration: int, classroom: List[Classroom], teacher: List[Teacher], working_hours: Dict[Day, List[Slot]], connection_probability: float = 0.5):
     """
     Create one random solution
     """
 
     groups = create_groups(students, limit, list(set(students)), duration)
-    groups = connect_groups(groups, limit)  # do zakomentowania jeśli nie chcemy łączenia grup przy generacji rozwiązań początkowych
+    groups = connect_groups(groups, limit, connection_probability)  # do zakomentowania jeśli nie chcemy łączenia grup przy generacji rozwiązań początkowych
     possible_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]] = {}  # możliwe sloty do wybrania: dniu i id slotu przypisane są możliwe do wyboru sale i lektorzy
     possible_first_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]] = {}
     classroom_id: List[Room] = [c.id for c in classroom]
@@ -90,6 +90,8 @@ def random_initial_solution(students: List[int], limit: int, duration: int, clas
     solution: Dict[Tuple[Day, Slot], List[Tuple[Group, int]]] = {}
 
     for g in groups:
+        if not possible_first_slots:
+            raise ValueError('Cannot create initial solution, too much students')
         first_slot = random.choice(list(possible_first_slots.keys()))
         chosen_room = random.choice(possible_first_slots[first_slot][0])
         chosen_teacher = random.choice(possible_first_slots[first_slot][1])
