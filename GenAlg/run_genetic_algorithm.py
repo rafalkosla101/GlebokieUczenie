@@ -1,7 +1,6 @@
-from GenAlg.shared_types import *
 from GenAlg.GeneticAlgorithm import *
 from GenAlg.initial_solution import *
-from data_generation.generate_data import *
+from DataGeneration.generate_data import *
 
 
 def run_genetic_algorithm(population_size: int,

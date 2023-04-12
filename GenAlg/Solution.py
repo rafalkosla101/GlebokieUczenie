@@ -1,7 +1,5 @@
 # File with implemented class representing single solution
-from GenAlg.shared_types import *
-import pandas as pd
-from data_generation.generate_data import *
+from DataGeneration.generate_data import *
 
 
 class Solution:
