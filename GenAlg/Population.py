@@ -79,7 +79,7 @@ class Population:
             return solution_idx + 1
         
         first_solution_idx = choose_one_solution(self._population)
-        second_solution_idx = choose_one_solution(self._population[:first_solution_idx] + self._population[first_solution_idx+1])
+        second_solution_idx = choose_one_solution(self._population[:first_solution_idx] + [self._population[first_solution_idx+1]])
 
         return [self._population[first_solution_idx], self._population[second_solution_idx]]
 

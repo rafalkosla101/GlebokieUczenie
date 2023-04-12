@@ -19,9 +19,9 @@ class GeneticAlgorithm:
         Method for solving problem with genetic algorithm.
         """
         best_solutions: List[Solution] = []
-        current_population: Population = self._initial_population
-
+        current_population = self._initial_population._population
         for _ in range(self._n_generations):
+            current_population = Population(current_population, self._initial_population._selection_type)
             current_population.sort_by_fitness()
             best_solutions.append(current_population.get_best_solution())
             new_population = Population([], self._initial_population._selection_type)

@@ -90,3 +90,7 @@ class Teacher:
         new_dict = {key: val for key, val in self.preferred_hours.items() if val != '[]'}
         self.preferred_hours = new_dict
 
+    def convert_slots_to_int(self):
+        for key, val in self.preferred_hours.items():
+            int_slots = [int(slot) for slot in val[1:-1].split(", ")]
+            self.preferred_hours[key] = int_slots

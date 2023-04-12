@@ -1,5 +1,5 @@
 {
-    "limit": 3,
+    "limit": 15,
     "duration": 4,
     "number_of_classrooms": 3,
     "working_hours": {

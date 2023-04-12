@@ -60,15 +60,6 @@ def convert_teachers_to_dataframe(teachers_list: List[Teacher]):
 
 def convert_teachers_dataframe_to_list(teachers_dataframe):
     return [Teacher(teachers_dataframe[column].to_dict()) for column in teachers_dataframe]
-    # days = teachers_dataframe['0']
-    # teachers_dataframe = teachers_dataframe.drop(columns=['0'])
-    # t_list = [Teacher(teachers_dataframe[column].to_dict()) for column in teachers_dataframe]
-    # for teacher in t_list:
-    #     new_dict = {}
-    #     for k in teacher.preferred_hours.keys():
-    #         new_dict[days[k]] = teacher.preferred_hours[k]
-    #     teacher.preferred_hours = new_dict
-    # return t_list
 
 
 def prepare_students_list() -> List:
@@ -93,6 +84,7 @@ def prepare_teachers_list() -> List:
                      csv_df.columns]
     for teacher in teachers_list:
         teacher.delete_empty_lists()
+        teacher.convert_slots_to_int()
     return teachers_list
 
 

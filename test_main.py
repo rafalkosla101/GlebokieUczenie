@@ -20,5 +20,12 @@ if __name__ == '__main__':
     # new_sol1, new_sol2 = sol1.crossover(sol2)
     # display_solutions(new_sol1, new_sol2, working_hours)
 
-    results = run_genetic_algorithm(10, 10, Selection.ROULETTE, Mutation.CHANGE_TEACHER, Crossover.ALL_DAY)
+    results = run_genetic_algorithm(10, 10, Selection.BEST, Mutation.SHIFT, Crossover.ALL_DAY)
+    '''
+    for slot in results[0].solution:
+        print(slot)
+        for group in results[0].solution[slot]:
+            print(group[0])
+    '''
+    display_solutions(results[0], results[1], working_hours)
 
