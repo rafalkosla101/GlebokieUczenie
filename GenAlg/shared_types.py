@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from enum import Enum
 import random
 import copy
@@ -43,7 +43,8 @@ class Crossover(Enum):
 
 
 class Group:
-    def __init__(self, group_id: int, level: int, duration: int, number_of_students: Dict[int, int], teacher: int, classroom: int):
+    def __init__(self, group_id: int, level: int, duration: int, number_of_students: Dict[int, int],
+                 teacher: Optional[int], classroom: Optional[int]):
         self.id = group_id
         self.level = level
         self.duration = duration
@@ -52,7 +53,7 @@ class Group:
         self.classroom = classroom
 
     def __str__(self):
-        return f"G: {self.id}, L: {self.level}, S: {self.number_of_students}, T: {self.teacher}, C: {self.classroom}"
+        return f"L: {self.level}, S: {self.number_of_students}, T: {self.teacher}, C: {self.classroom}"
         # return f'Group ID: {self.id}, Level: {self.level}, Students: {self.number_of_students}, Teacher: {self.teacher}, Classroom: {self.classroom}'
 
 

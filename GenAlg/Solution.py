@@ -1,15 +1,30 @@
 # File with implemented class representing single solution
+# PROJECT PACKAGES
+from GenAlg.utils import draw_rect
+from GenAlg.shared_types import *
 from DataGeneration.generate_data import *
+
+# BUILT-IN PACKAGES
+import matplotlib.pyplot as plt
+
+from copy import deepcopy
+from typing import Optional, Dict, List
 
 
 class Solution:
     def __init__(self,
                  solution: Dict[Tuple[Day, Slot], List[Tuple[Group, int]]], 
-                 possible_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]],
+                 possible_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]], limit: int, duration: int,
+                 classrooms: List[Classroom], teachers: List[Teacher], working_hours: Dict[Day, List[Slot]],
                  mutation_method: Mutation,
                  crossover_method: Crossover):
         self.solution = solution
         self.possible_slots = possible_slots
+        self.limit = limit
+        self.duration = duration
+        self.classrooms = classrooms
+        self.teachers = teachers
+        self.working_hours = working_hours
         self.mutation_method = mutation_method
         self.crossover_method = crossover_method
 
@@ -74,6 +89,139 @@ class Solution:
             return self._crossover_all_day(other)
         elif self.crossover_method == Crossover.SINGLE_BLOCK:
             return self._crossover_single_block(other)
+
+    def display(self, other: Optional['Solution']) -> None:
+        """
+        Method to display solution(s)
+        :param other: Optional other solution
+        """
+
+        side = 30
+        max_slot = max([slot for day in range(1, 5 + 1) for slot in self.working_hours[day]])
+        groups1 = sorted(list(set([group.id for timeslot in self.solution for group, _ in self.solution[timeslot]])))
+        groups2 = None
+
+        if other is not None:
+            groups2 = sorted(list(set([group.id for timeslot in other.solution for group, _ in other.solution[timeslot]])))
+
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+
+        _ = [draw_rect(side * id_, 0, side, side, "red", ax, str(id_)) for id_ in groups1]
+        _ = [draw_rect(side * (id_ + groups1[-1] + 1), 0, side, side, "red", ax, str(id_)) for id_ in groups2]
+
+        for day in range(1, 5 + 1):
+            day_y = (1 - day) * max_slot * side
+            plt.axhline(y=day_y, color="blue")
+            draw_rect(-2 * side, day_y, side, -max_slot * side, "blue", ax, str(day), to_fill=False)
+
+            for slot in range(1, max_slot + 1):
+                slot_y = -side * ((day - 1) * max_slot + slot - 1)
+                draw_rect(-side, slot_y, side, -side, "blue", ax, str(slot), to_fill=False)
+
+        for day, slot in self.solution:
+            for group, _ in self.solution[(day, slot)]:
+                x = side * group.id
+                y = -side * ((day - 1) * max_slot + slot - 1)
+                draw_rect(x, y, side, -side, "orange", ax, str(group))
+
+        if other is not None:
+            for day, slot in other.solution:
+                for group, _ in other.solution[(day, slot)]:
+                    x = side * (group.id + groups1[-1] + 1)
+                    y = -side * ((day - 1) * max_slot + slot - 1)
+                    draw_rect(x, y, side, -side, "green", ax, str(group))
+
+        plt.axvline(x=side * (groups1[-1] + 1), color="blue")
+        plt.xlim([-2 * side, side * (groups1[-1] + 1 + groups2[-1] + 1)])
+        plt.ylim([-side * (max_slot * 5), side])
+        plt.axis('off')
+        plt.show()
+
+    def assign(self, students_by_levels: Dict[int, int], group_id: int) -> None:
+        """
+        Method to create new groups and assign students to them
+        :param students_by_levels: Number of students assigned to each level
+        :param group_id: Group ID
+        """
+
+        groups: List[Group] = []
+
+        for level, num in students_by_levels.items():
+            while num > 0:
+                number_of_students = {level: self.limit} if num >= self.limit else {level: num}
+                group = Group(group_id, level, self.duration, number_of_students, None, None)
+                num -= self.limit
+                groups.append(group)
+                group_id += 1
+
+        groups = connect_groups(groups, self.limit)
+        possible_first_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]] = {}
+        classroom_id = [c.id for c in self.classrooms]
+        teacher_id = [t.id for t in self.teachers]
+
+        for day in self.working_hours:
+            for slot in self.working_hours[day][:-self.duration + 1]:
+                classroom_id_, teacher_id_ = deepcopy(classroom_id), deepcopy(teacher_id)
+
+                for i in range(self.duration):
+                    timeslot = (day, slot + i)
+
+                    if timeslot in self.solution:
+                        for group, _ in self.solution[timeslot]:
+                            if group.classroom in classroom_id_:
+                                classroom_id_.remove(group.classroom)
+
+                            if group.teacher in teacher_id_:
+                                teacher_id_.remove(group.teacher)
+
+                if classroom_id_ and teacher_id_:
+                    possible_first_slots[(day, slot)] = (classroom_id_, teacher_id_)
+
+        print(possible_first_slots)
+
+        for g in groups:
+            day, slot = random.choice(list(possible_first_slots.keys()))
+            chosen_room = random.choice(possible_first_slots[(day, slot)][0])
+            chosen_teacher = random.choice(possible_first_slots[(day, slot)][1])
+            g.teacher = chosen_teacher
+            g.classroom = chosen_room
+
+            for i in range(self.duration):
+                timeslot = (day, slot + i)
+
+                if timeslot in self.solution:
+                    for group, _ in self.solution[timeslot]:
+                        if group.teacher == chosen_teacher or group.classroom == chosen_room:
+                            break
+
+                    else:
+                        self.solution[timeslot].append((g, i + 1))
+
+                else:
+                    self.solution[timeslot] = [(g, i + 1)]
+
+                if timeslot in possible_first_slots:
+                    if chosen_room in possible_first_slots[timeslot][0]:
+                        possible_first_slots[timeslot][0].remove(chosen_room)
+
+                    if chosen_teacher in possible_first_slots[timeslot][1]:
+                        possible_first_slots[timeslot][1].remove(chosen_teacher)
+
+                    if not possible_first_slots[timeslot][0] or not possible_first_slots[timeslot][1]:
+                        possible_first_slots.pop(timeslot)
+
+                timeslot = (day, slot - i)
+
+                if timeslot in possible_first_slots:
+                    if chosen_room in possible_first_slots[timeslot][0]:
+                        possible_first_slots[timeslot][0].remove(chosen_room)
+
+                    if chosen_teacher in possible_first_slots[timeslot][1]:
+                        possible_first_slots[timeslot][1].remove(chosen_teacher)
+
+                    if not possible_first_slots[timeslot][0] or not possible_first_slots[timeslot][1]:
+                        possible_first_slots.pop(timeslot)
         
     def _mutate_shift(self) -> 'Solution':
         new_sol = copy.deepcopy(self.solution)
@@ -165,42 +313,299 @@ class Solution:
                 return Solution(new_sol, new_poss_slot, self.mutation_method, self.crossover_method)
             possible_slots_to_change.remove(slot_to_change)
         return Solution(new_sol, new_poss_slot, self.mutation_method, self.crossover_method)
-    
-    def _crossover_all_day(self, sol2: 'Solution') -> Tuple['Solution', 'Solution']:
+
+    def _crossover_all_day(self, other: 'Solution') -> Tuple['Solution', 'Solution']:
         """
-        Function to perform the crossover of two solutions
-        :param self: First solution
-        :param sol2: Second solution
+        Function to perform the crossover of two solutions day-wise
+        :param other: Other solution
         """
 
-        new_sol1 = {}
-        new_sol2 = {}
+        new_sol1, new_sol2 = {}, {}
+        day1, day2 = random.randrange(1, 5 + 1), random.randrange(1, 5 + 1)
+        n_groups1 = len([group for day, slot in self.solution
+                         for group, i in self.solution[(day, slot)] if day == day1 and i == 1])
+        n_groups2 = len([group for day, slot in other.solution
+                         for group, i in other.solution[(day, slot)] if day == day2 and i == 1])
+        n_groups = min([n_groups1, n_groups2])
+        idx1 = max([group.id for timeslot in other.solution for group, _ in other.solution[timeslot]])
+        idx2 = max([group.id for timeslot in self.solution for group, _ in self.solution[timeslot]])
+        n_students1 = [group.number_of_students for day, slot in self.solution
+                       for group, i in self.solution[(day, slot)] if day == day1 and i == 1]
+        n_students2 = [group.number_of_students for day, slot in other.solution
+                       for group, i in other.solution[(day, slot)] if day == day2 and i == 1]
+        levels1, levels2 = {i: 0 for i in range(1, 3 + 1)}, {i: 0 for i in range(1, 3 + 1)}
+        n1, n2 = 0, 0
 
-        day1, day2 = random.randrange(1, 6), random.randrange(1, 6)
+        print(len(n_students1), len(n_students2))
+        print(day1, day2)
 
         for (day, slot), group_info in self.solution.items():
-            if day == day1:
-                new_sol2[(day, slot)] = group_info
-
-            else:
+            if day != day1:
                 new_sol1[(day, slot)] = group_info
+                continue
 
-        for (day, slot), group_info in sol2.solution.items():
-            if day == day2:
-                new_sol1[(day, slot)] = group_info
+            for group, i in group_info:
+                if i != 1:
+                    continue
 
-            else:
+                n1 += 1
+
+                if n1 > n_groups:
+                    for level, num in group.number_of_students.items():
+                        levels1[level] += num
+
+                else:
+                    idx1 += 1
+                    group_ = deepcopy(group)
+                    group_.id = idx1
+                    group_.number_of_students = n_students2[n1 - 1]
+
+                    for j in range(group.duration):
+                        if (day2, slot + j) in new_sol2:
+                            new_sol2[(day2, slot + j)].append((group_, j + 1))
+
+                        else:
+                            new_sol2[(day2, slot + j)] = [(group_, j + 1)]
+
+        for (day, slot), group_info in other.solution.items():
+            if day != day2:
                 new_sol2[(day, slot)] = group_info
+                continue
 
-        new_sol1 = Solution(new_sol1, self.possible_slots, self.mutation_method, self.crossover_method)
-        new_sol2 = Solution(new_sol2, self.possible_slots, self.mutation_method, self.crossover_method)
+            for group, i in group_info:
+                if i != 1:
+                    continue
+
+                n2 += 1
+
+                if n2 > n_groups:
+                    for level, num in group.number_of_students.items():
+                        levels2[level] += num
+
+                else:
+                    idx2 += 1
+                    group_ = deepcopy(group)
+                    group_.id = idx2
+                    group_.number_of_students = n_students1[n2 - 1]
+
+                    for j in range(group.duration):
+                        if (day1, slot + j) in new_sol1:
+                            new_sol1[(day1, slot + j)].append((group_, j + 1))
+
+                        else:
+                            new_sol1[(day1, slot + j)] = [(group_, j + 1)]
+
+        new_sol1 = Solution(new_sol1, self.possible_slots, self.limit, self.duration, self.classrooms, self.teachers,
+                            self.working_hours, self.mutation_method, self.crossover_method)
+        new_sol2 = Solution(new_sol2, self.possible_slots, self.limit, self.duration, self.classrooms, self.teachers,
+                            self.working_hours, self.mutation_method, self.crossover_method)
+
+        print(levels1)
+        print(levels2)
+
+        if n_groups1 > n_groups2:
+            new_sol1.assign(levels1, idx1 + 1)
+
+        elif n_groups1 < n_groups2:
+            new_sol2.assign(levels2, idx2 + 1)
 
         return new_sol1, new_sol2
-    
-    def _crossover_single_block(self, sol2: 'Solution') -> Tuple['Solution', 'Solution']:
+
+    def _crossover_single_block(self, other: 'Solution') -> Tuple['Solution', 'Solution']:
         """
-        Function to perform the crossover of two solutions
-        :param self: First solution
-        :param sol2: Second solution
+        Function to perform the crossover of two solutions block-wise
+        :param other: Other solution
         """
-        pass
+
+        new_sol1, new_sol2 = {}, {}
+        day1, slot1, group_id1 = random.choice([(day, slot, group.id) for day, slot in self.solution for group, i in self.solution[(day, slot)] if i == 1])
+        day2, slot2, group_id2 = random.choice([(day, slot, group.id) for day, slot in other.solution for group, i in other.solution[(day, slot)] if i == 1])
+        idx1 = max([group.id for timeslot in other.solution for group, _ in other.solution[timeslot]])
+        idx2 = max([group.id for timeslot in self.solution for group, _ in self.solution[timeslot]])
+        n_students1 = [group.number_of_students for day, slot in self.solution
+                       for group, i in self.solution[(day, slot)] if day == day1 and group.id == group_id1 and i == 1][0]
+        n_students2 = [group.number_of_students for day, slot in other.solution
+                       for group, i in other.solution[(day, slot)] if day == day2 and group.id == group_id2 and i == 1][0]
+        levels1, levels2 = {i: 0 for i in range(1, 3 + 1)}, {i: 0 for i in range(1, 3 + 1)}
+        group1, group2 = None, None
+
+        print(day1, day2)
+        print(slot1, slot2)
+
+        for (day, slot), group_info in self.solution.items():
+            if day != day1:
+                new_sol1[(day, slot)] = group_info
+                continue
+
+            for group, i in group_info:
+                if i != 1:
+                    continue
+
+                if group.id == group_id1:
+                    # for level, num in group.number_of_students.items():
+                    #     levels1[level] += num
+
+                    group1 = deepcopy(group)
+                    group1.id = idx1 + 1
+                    group1.number_of_students = n_students2
+
+                else:
+                    for j in range(group.duration):
+                        if (day1, slot + j) in new_sol1:
+                            new_sol1[(day1, slot + j)].append((group, j + 1))
+
+                        else:
+                            new_sol1[(day1, slot + j)] = [(group, j + 1)]
+
+        for (day, slot), group_info in other.solution.items():
+            if day != day2:
+                new_sol2[(day, slot)] = group_info
+                continue
+
+            for group, i in group_info:
+                if i != 1:
+                    continue
+
+                if group.id == group_id2:
+                    # for level, num in group.number_of_students.items():
+                    #     levels2[level] += num
+
+                    group2 = deepcopy(group)
+                    group2.id = idx2 + 1
+                    group2.number_of_students = n_students1
+
+                else:
+                    for j in range(group.duration):
+                        if (day2, slot + j) in new_sol2:
+                            new_sol2[(day2, slot + j)].append((group, j + 1))
+
+                        else:
+                            new_sol2[(day2, slot + j)] = [(group, j + 1)]
+
+
+        to_delete2 = []
+
+        for j in range(self.duration):
+            if (day1, slot1 + j) in new_sol2:
+                for group, i in new_sol2[(day1, slot1 + j)]:
+                    if group.classroom == group1.classroom or group.teacher == group1.teacher:
+                        to_delete2.append((day1, slot1 + j - i + 1, group.id))
+
+                        for level, num in group.number_of_students.items():
+                            levels2[level] += num
+
+        to_delete2 = list(set(to_delete2))
+
+        for day, slot, group_id in to_delete2:
+            for j in range(self.duration):
+                if (day, slot + j) in new_sol2:
+                    group_info = []
+
+                    for group, i in new_sol2[(day, slot + j)]:
+                        if group.id != group_id:
+                            group_info.append((group, i))
+
+                    if group_info:
+                        new_sol2[(day, slot + j)] = group_info
+
+                    else:
+                        del new_sol2[(day, slot + j)]
+
+        for j in range(self.duration):
+            if (day1, slot1 + j) in new_sol2:
+                new_sol2[(day1, slot1 + j)].append((group1, j + 1))
+
+            else:
+                new_sol2[(day1, slot1 + j)] = [(group1, j + 1)]
+
+        to_delete1 = []
+
+        for j in range(self.duration):
+            if (day2, slot2 + j) in new_sol1:
+                for group, i in new_sol1[(day2, slot2 + j)]:
+                    if group.classroom == group2.classroom or group.teacher == group2.teacher:
+                        to_delete1.append((day2, slot2 + j - i + 1, group.id))
+
+                        for level, num in group.number_of_students.items():
+                            levels1[level] += num
+
+        to_delete1 = list(set(to_delete2))
+
+        for day, slot, group_id in to_delete1:
+            for j in range(self.duration):
+                if (day, slot + j) in new_sol1:
+                    group_info = []
+
+                    for group, i in new_sol1[(day, slot + j)]:
+                        if group.id != group_id:
+                            group_info.append((group, i))
+
+                    if group_info:
+                        new_sol1[(day, slot + j)] = group_info
+
+                    else:
+                        del new_sol1[(day, slot + j)]
+
+        for j in range(self.duration):
+            if (day2, slot2 + j) in new_sol1:
+                new_sol1[(day2, slot2 + j)].append((group2, j + 1))
+
+            else:
+                new_sol1[(day2, slot2 + j)] = [(group2, j + 1)]
+
+        new_sol1 = Solution(new_sol1, self.possible_slots, self.limit, self.duration, self.classrooms, self.teachers,
+                            self.working_hours, self.mutation_method, self.crossover_method)
+        new_sol2 = Solution(new_sol2, self.possible_slots, self.limit, self.duration, self.classrooms, self.teachers,
+                            self.working_hours, self.mutation_method, self.crossover_method)
+
+        for i in range(len(to_delete2)):
+            new_sol2.assign(levels2, idx1 + i + 1)
+
+        for i in range(len(to_delete1)):
+            new_sol1.assign(levels1, idx2 + i + 1)
+
+        print(levels1)
+        print(levels2)
+
+        return new_sol1, new_sol2
+
+
+def connect_groups(groups: List[Group], limit: int, connection_probability: float = 0.5) -> List[Group]:
+    """
+    Connect groups with students on similar level
+    """
+    to_connect: List[Tuple[Group, int]] = []  # groups that can be connected
+    for g in groups:
+        if sum(g.number_of_students.values()) < limit:
+            to_connect.append((g, sum(g.number_of_students.values())))
+    to_connect.sort(key=lambda x: x[0].level)
+    iterator = 0
+    while iterator < len(to_connect) - 1:
+        connected = False
+        if to_connect[iterator][1] + to_connect[iterator + 1][1] <= limit:
+            if random.random() < connection_probability:
+                g1 = to_connect[iterator][0]
+                g2 = to_connect[iterator + 1][0]
+                levels = g1.number_of_students
+                for l in g2.number_of_students.keys():
+                    if l in levels.keys():
+                        levels[l] += g2.number_of_students[l]
+                    else:
+                        levels[l] = g2.number_of_students[l]
+                keys_list = list(levels.keys())
+                keys_list.sort()
+                if len(keys_list) == 2 and keys_list[1] - keys_list[0] == 1:
+                    connected = True
+                    lev = keys_list[0] if levels[keys_list[0]] > levels[keys_list[1]] else keys_list[1]
+                    new_group = Group(g1.id, lev, g1.duration, levels, g1.teacher, g1.classroom)
+                    groups.remove(g1)
+                    groups.remove(g2)
+                    groups.append(new_group)
+                elif len(keys_list) == 3 and keys_list[1] - keys_list[0] == 1 and keys_list[2] - keys_list[1] == 1:
+                    connected = True
+                    new_group = Group(g1.id, keys_list[1], g1.duration, levels, g1.teacher, g1.classroom)
+                    groups.remove(g1)
+                    groups.remove(g2)
+                    groups.append(new_group)
+        iterator += 2 if connected else 1
+    return groups

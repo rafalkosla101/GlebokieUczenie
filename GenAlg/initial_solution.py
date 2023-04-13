@@ -1,8 +1,5 @@
-from GenAlg.Solution import Solution
+from GenAlg.Solution import Solution, connect_groups
 from GenAlg.shared_types import *
-
-import matplotlib.pyplot as plt
-from matplotlib import patches
 from copy import deepcopy
 
 
@@ -126,53 +123,3 @@ def random_initial_solution(students: List[int], limit: int, duration: int, clas
                     possible_first_slots.pop(key2)
 
     return solution, possible_slots
-
-
-def display_solutions(solution1: Solution, solution2: Solution, working_hours: Dict[int, List[int]]) -> None:
-    """
-    Function to display solutions
-    :param sol1: First solution
-    :param sol2: Second solution
-    :param working_hours: Working hours
-    """
-    sol1 = solution1.solution
-    sol2 = solution2.solution
-
-    max_slot = max([slot for day in range(1, 5 + 1) for slot in working_hours[day]])
-    groups1 = list(set([group.id for timeslot in sol1 for group, _ in sol1[timeslot]]))
-    groups2 = list(set([group.id for timeslot in sol2 for group, _ in sol2[timeslot]]))
-
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-
-    for day in range(1, 5 + 1):
-        for slot in range(1, max_slot + 1):
-            rect = patches.Rectangle((0, -30 * ((day - 1) * max_slot + slot - 1)), 30, -30, edgecolor="black", facecolor="blue", linewidth=1)
-            ax.add_patch(rect)
-            rx, ry = rect.get_xy()
-            cx = rx + rect.get_width() / 2.0
-            cy = ry + rect.get_height() / 2.0
-            ax.annotate(f"({day}, {slot})", (cx, cy), color="black", fontsize=5, ha="center", va="center")
-
-            if (day, slot) in sol1:
-                for group, _ in sol1[(day, slot)]:
-                    rect = patches.Rectangle((30 * (groups1.index(group.id) + 1), -30 * ((day - 1) * max_slot + slot)), 30, -30, edgecolor="black", facecolor="orange", linewidth=1)
-                    ax.add_patch(rect)
-                    rx, ry = rect.get_xy()
-                    cx = rx + rect.get_width() / 2.0
-                    cy = ry + rect.get_height() / 2.0
-                    ax.annotate(str(group), (cx, cy), color="black", fontsize=5, ha="center", va="center")
-
-            if (day, slot) in sol2:
-                for group, _ in sol2[(day, slot)]:
-                    rect = patches.Rectangle((30 * (groups2.index(group.id) + 1 + len(groups1)), -30 * ((day - 1) * max_slot + slot)), 30, -30, edgecolor="black", facecolor="green", linewidth=1)
-                    ax.add_patch(rect)
-                    rx, ry = rect.get_xy()
-                    cx = rx + rect.get_width() / 2.0
-                    cy = ry + rect.get_height() / 2.0
-                    ax.annotate(str(group), (cx, cy), color="black", fontsize=5, ha="center", va="center")
-
-    plt.axvline(x=30 * (1 + len(groups1)))
-    plt.xlim([-5, 30 * (len(groups1) + len(groups2) + 1)])
-    plt.ylim([-30 * (max_slot * 5 + 1), 5])
-    plt.show()
