@@ -279,9 +279,11 @@ class Solution:
                 new_poss_slots[new_slot][1].remove(group_to_change.teacher)
                 if not new_poss_slots[new_slot][0] or not new_poss_slots[new_slot][1]:
                     new_poss_slots.pop(new_slot)
-                return Solution(new_sol, new_poss_slots, self.mutation_method, self.crossover_method)
+                return Solution(new_sol, new_poss_slots, self.limit, self.duration, self.classrooms, self.teachers,
+                            self.working_hours, self.mutation_method, self.crossover_method)
             possible_slots_to_change.remove(slot_to_change)
-        return Solution(new_sol, new_poss_slots, self.mutation_method, self.crossover_method)
+        return Solution(new_sol, new_poss_slots, self.limit, self.duration, self.classrooms, self.teachers,
+                            self.working_hours, self.mutation_method, self.crossover_method)
     
     def _mutate_change_teacher(self) -> 'Solution':
         new_sol = copy.deepcopy(self.solution)
@@ -310,9 +312,11 @@ class Solution:
                 for i in range(group_to_change.duration):
                     new_poss_slot[(first_slot[0], first_slot[1] + i)][1].append(prev_teacher)
                     new_poss_slot[(first_slot[0], first_slot[1] + i)][1].remove(chosen_teacher)
-                return Solution(new_sol, new_poss_slot, self.mutation_method, self.crossover_method)
+                return Solution(new_sol, new_poss_slot, self.limit, self.duration, self.classrooms, self.teachers,
+                            self.working_hours, self.mutation_method, self.crossover_method)
             possible_slots_to_change.remove(slot_to_change)
-        return Solution(new_sol, new_poss_slot, self.mutation_method, self.crossover_method)
+        return Solution(new_sol, new_poss_slot, self.limit, self.duration, self.classrooms, self.teachers,
+                            self.working_hours, self.mutation_method, self.crossover_method)
 
     def _crossover_all_day(self, other: 'Solution') -> Tuple['Solution', 'Solution']:
         """
