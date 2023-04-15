@@ -69,17 +69,17 @@ class Population:
         def choose_one_solution(population: List[Solution]) -> int:
             fitness_sum = sum([sol.calculate_fitness() for sol in population])
             random_point = random.uniform(0, fitness_sum)
-            partial_sum = 0
             solution_idx = 0
+            partial_sum = population[solution_idx].calculate_fitness()
 
             while partial_sum < random_point:
                 partial_sum += population[solution_idx].calculate_fitness()
                 solution_idx += 1
             
-            return solution_idx + 1
+            return solution_idx
         
         first_solution_idx = choose_one_solution(self._population)
-        second_solution_idx = choose_one_solution(self._population[:first_solution_idx] + [self._population[first_solution_idx+1]])
+        second_solution_idx = choose_one_solution(self._population[:first_solution_idx] + self._population[first_solution_idx+1:])
 
         return [self._population[first_solution_idx], self._population[second_solution_idx]]
 
@@ -93,6 +93,6 @@ class Population:
             return max([idx for idx in participants_idx_list], key=lambda s: population[s].calculate_fitness())
         
         first_solution_idx = choose_one_solution(self._population, number_of_participants)
-        second_solution_idx = choose_one_solution(self._population[:first_solution_idx] + self._population[first_solution_idx+1], number_of_participants)
+        second_solution_idx = choose_one_solution(self._population[:first_solution_idx] + self._population[first_solution_idx+1:], number_of_participants)
 
         return [self._population[first_solution_idx], self._population[second_solution_idx]]
