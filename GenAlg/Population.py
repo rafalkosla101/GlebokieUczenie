@@ -23,15 +23,15 @@ class Population:
 
     def sort_by_fitness(self) -> List[Solution]:
         """
-        Returns population list sorted ascending by fitness.
+        Returns population list sorted descending by fitness.
         """
-        return sorted(self._population, key=lambda s: s.calculate_fitness())
+        return sorted(self._population, key=lambda s: s.calculate_fitness(), reverse=True)
     
     def get_best_solution(self) -> Solution:
         """
-        Returns best solution by calculating fitness. 
+        Returns best solution by calculating fitness (min value). 
         """
-        return max(self._population, key=lambda s: s.calculate_fitness())
+        return min(self._population, key=lambda s: s.calculate_fitness())
     
     def get_population_size(self) -> int:
         """
@@ -43,7 +43,8 @@ class Population:
         """
         Returns best _population_size solutions from self and other.
         """
-        return sorted(self._population + other._population, key=lambda s: s.calculate_fitness())[:self._population_size]
+        population_list = sorted(self._population + other._population, key=lambda s: s.calculate_fitness(), reverse=True)[:self._population_size]
+        return Population(population_list, self._selection_type)
     
     def selection(self) -> List[Solution]:
         """
@@ -70,10 +71,10 @@ class Population:
             fitness_sum = sum([sol.calculate_fitness() for sol in population])
             random_point = random.uniform(0, fitness_sum)
             solution_idx = 0
-            partial_sum = population[solution_idx].calculate_fitness()
+            partial_sum = fitness_sum - population[solution_idx].calculate_fitness()
 
             while partial_sum < random_point:
-                partial_sum += population[solution_idx].calculate_fitness()
+                partial_sum += fitness_sum - population[solution_idx].calculate_fitness()
                 solution_idx += 1
             
             return solution_idx
@@ -90,7 +91,7 @@ class Population:
         """
         def choose_one_solution(population: List[Solution], number_of_participants: int) -> int:
             participants_idx_list = random.sample(range(len(population)), number_of_participants)
-            return max([idx for idx in participants_idx_list], key=lambda s: population[s].calculate_fitness())
+            return min([idx for idx in participants_idx_list], key=lambda s: population[s].calculate_fitness())
         
         first_solution_idx = choose_one_solution(self._population, number_of_participants)
         second_solution_idx = choose_one_solution(self._population[:first_solution_idx] + self._population[first_solution_idx+1:], number_of_participants)
