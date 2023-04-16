@@ -1,6 +1,7 @@
 from GenAlg.GeneticAlgorithm import *
 from GenAlg.initial_solution import *
 from DataGeneration.generate_data import *
+import matplotlib.pyplot as plt
 
 
 def run_genetic_algorithm(population_size: int,
@@ -37,6 +38,21 @@ def run_genetic_algorithm(population_size: int,
 
     # Return list of best solutions from every generation
     return best_solutions
+
+
+def plot_fitness(best_solutions: List[Solution]) -> None:
+    """
+    Funtion plots fitness score for every solution given in list.
+    """
+    fitness_values = [sol.calculate_fitness() for sol in best_solutions]
+    iterations = [i for i in range(1, len(best_solutions) + 1)]
+    plt.figure()
+    plt.plot(iterations, fitness_values)
+    plt.title("Fitness value over iterations")
+    plt.ylabel("Fitness score")
+    plt.xlabel("Iteration")
+    plt.grid()
+    plt.show()
 
 
 if __name__ == "__main__":

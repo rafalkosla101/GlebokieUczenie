@@ -139,6 +139,7 @@ class Ui_MainWindow(object):
                                                            getattr(shared_types.Mutation, self.get_mutation()),
                                                            getattr(shared_types.Crossover, self.get_crossover()))
         solution[0].display()
+        GenAlg.run_genetic_algorithm.plot_fitness(solution)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate

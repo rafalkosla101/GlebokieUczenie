@@ -2,7 +2,7 @@ from GenAlg.Solution import *
 from GenAlg.GeneticAlgorithm import *
 from GenAlg.Population import *
 from GenAlg.initial_solution import *
-from GenAlg.run_genetic_algorithm import run_genetic_algorithm
+from GenAlg.run_genetic_algorithm import run_genetic_algorithm, plot_fitness
 
 
 if __name__ == '__main__':

@@ -90,7 +90,7 @@ class Solution:
         elif self.crossover_method == Crossover.SINGLE_BLOCK:
             return self._crossover_single_block(other)
 
-    def display(self, other: Optional['Solution']) -> None:
+    def display(self, other: Optional['Solution']=None) -> None:
         """
         Method to display solution(s)
         :param other: Optional other solution
@@ -99,7 +99,7 @@ class Solution:
         side = 30
         max_slot = max([slot for day in range(1, 5 + 1) for slot in self.working_hours[day]])
         groups1 = sorted(list(set([group.id for timeslot in self.solution for group, _ in self.solution[timeslot]])))
-        groups2 = None
+        groups2 = []
 
         if other is not None:
             groups2 = sorted(list(set([group.id for timeslot in other.solution for group, _ in other.solution[timeslot]])))
@@ -133,7 +133,10 @@ class Solution:
                     draw_rect(x, y, side, -side, "green", ax, str(group))
 
         plt.axvline(x=side * (groups1[-1] + 1), color="blue")
-        plt.xlim([-2 * side, side * (groups1[-1] + 1 + groups2[-1] + 1)])
+        if len(groups2):
+            plt.xlim([-2 * side, side * (groups1[-1] + 1 + groups2[-1] + 1)])
+        else:
+            plt.xlim([-2 * side, side * (groups1[-1] + 1)])
         plt.ylim([-side * (max_slot * 5), side])
         plt.axis('off')
         plt.show()
