@@ -134,11 +134,11 @@ class Ui_MainWindow(object):
         return generate_data.generate_classrooms(int(self.lineEdit.text()))
 
     def start_algorithm(self):
-        print(int(self.lineEdit_10.text()))
-        GenAlg.run_genetic_algorithm.run_genetic_algorithm(20, int(self.lineEdit_10.text()),
+        solution = GenAlg.run_genetic_algorithm.run_genetic_algorithm(20, int(self.lineEdit_10.text()),
                                                            getattr(shared_types.Selection, self.get_selection()),
                                                            getattr(shared_types.Mutation, self.get_mutation()),
                                                            getattr(shared_types.Crossover, self.get_crossover()))
+        solution[0].display()
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
