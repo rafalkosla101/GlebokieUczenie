@@ -25,7 +25,7 @@ class Population:
         """
         Returns population list sorted descending by fitness.
         """
-        return sorted(self._population, key=lambda s: s.calculate_fitness(), reverse=True)
+        return sorted(self._population, key=lambda s: s.calculate_fitness())
     
     def get_best_solution(self) -> Solution:
         """
@@ -43,7 +43,7 @@ class Population:
         """
         Returns best _population_size solutions from self and other.
         """
-        population_list = sorted(self._population + other._population, key=lambda s: s.calculate_fitness(), reverse=True)[:self._population_size]
+        population_list = sorted(self._population + other._population, key=lambda s: s.calculate_fitness())[:self._population_size]
         return Population(population_list, self._selection_type)
     
     def selection(self) -> List[Solution]:
@@ -68,14 +68,15 @@ class Population:
         Selects 2 solutions with roulette method
         """
         def choose_one_solution(population: List[Solution]) -> int:
-            fitness_sum = sum([sol.calculate_fitness() for sol in population])
+            fitness_inv = [1 / sol.calculate_fitness() for sol in population]
+            fitness_sum = sum(fitness_inv)
             random_point = random.uniform(0, fitness_sum)
             solution_idx = 0
-            partial_sum = fitness_sum - population[solution_idx].calculate_fitness()
+            partial_sum = fitness_inv[solution_idx]
 
             while partial_sum < random_point:
-                partial_sum += fitness_sum - population[solution_idx].calculate_fitness()
                 solution_idx += 1
+                partial_sum += fitness_inv[solution_idx]
             
             return solution_idx
         
