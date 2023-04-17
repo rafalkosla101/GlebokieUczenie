@@ -32,24 +32,23 @@ class Solution:
         """
         Calculates fitness and returns it.
         """
-        teacher_info = prepare_teachers_list()
+
         # Liczba slotów przydzielonych poza preferowanymi godzinami pracy lektora
-        slots_beyond_preferred_hours = 0
+        slots_beyond_preferred_hours: int = 0
+
         for (day, slot), group_info in self.solution.items():
-            available_teachers = [t.id for t in teacher_info if (day in t.preferred_hours.keys() and t.preferred_hours[day] and str(slot) in t.preferred_hours[day])]
-            for group in group_info:
-                if group[0].teacher not in available_teachers:
-                    slots_beyond_preferred_hours += 1
+            available_teachers = [t.id for t in self.teachers if day in t.preferred_hours and t.preferred_hours[day] and slot in t.preferred_hours[day]]
+            slots_beyond_preferred_hours += sum([1 if group.teacher not in available_teachers else 0 for group, _ in group_info])
 
         # Zbiór okienek pomiędzy zajęciami
         total_breaks = 0
         teacher_working_hours: Dict[Lector, List[Tuple[Day, Slot]]] = {}
         for (day, slot), group_info in self.solution.items():
-            for group in group_info:
-                if group[0].teacher not in teacher_working_hours.keys():
-                    teacher_working_hours[group[0].teacher] = []
-                teacher_working_hours[group[0].teacher].append((day, slot))
-                teacher_working_hours[group[0].teacher].sort()
+            for group, _ in group_info:
+                if group.teacher not in teacher_working_hours.keys():
+                    teacher_working_hours[group.teacher] = []
+                teacher_working_hours[group.teacher].append((day, slot))
+                teacher_working_hours[group.teacher].sort()
 
         for lector, slots in teacher_working_hours.items():
             for day in range(1, 6):
@@ -66,10 +65,11 @@ class Solution:
         # Uczeń przypisany do grupy o innym poziomie niż preferowany
         improper_group = 0
         for _, group_info in self.solution.items():
-            for group in group_info:
-                for student_level in group[0].number_of_students.keys():
-                    if group[0].level != student_level:
-                        improper_group += group[0].number_of_students[student_level]
+            for group, _ in group_info:
+                for student_level in group.number_of_students.keys():
+                    if group.level != student_level:
+                        improper_group += group.number_of_students[student_level]
+
         return BEYOND_HOURS_PENALTY * slots_beyond_preferred_hours + BREAKS_PENALTY * total_breaks + IMPROPER_LEVEL_PENALTY * improper_group
 
     def mutate(self) -> 'Solution':
@@ -107,8 +107,8 @@ class Solution:
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
 
-        _ = [draw_rect(side * id_, 0, side, side, "red", ax, str(id_)) for id_ in groups1]
-        _ = [draw_rect(side * (id_ + groups1[-1] + 1), 0, side, side, "red", ax, str(id_)) for id_ in groups2]
+        _ = [draw_rect(side * i, 0, side, side, "red", ax, str(i)) for i, _ in enumerate(groups1)]
+        _ = [draw_rect(side * (i + len(groups1)), 0, side, side, "red", ax, str(i)) for i, _ in enumerate(groups2)]
 
         for day in range(1, 5 + 1):
             day_y = (1 - day) * max_slot * side
@@ -121,22 +121,25 @@ class Solution:
 
         for day, slot in self.solution:
             for group, _ in self.solution[(day, slot)]:
-                x = side * group.id
+                x = side * groups1.index(group.id)
                 y = -side * ((day - 1) * max_slot + slot - 1)
                 draw_rect(x, y, side, -side, "orange", ax, str(group))
 
         if other is not None:
             for day, slot in other.solution:
                 for group, _ in other.solution[(day, slot)]:
-                    x = side * (group.id + groups1[-1] + 1)
+                    x = side * (groups2.index(group.id) + len(groups1))
                     y = -side * ((day - 1) * max_slot + slot - 1)
                     draw_rect(x, y, side, -side, "green", ax, str(group))
 
-        plt.axvline(x=side * (groups1[-1] + 1), color="blue")
-        if len(groups2):
-            plt.xlim([-2 * side, side * (groups1[-1] + 1 + groups2[-1] + 1)])
+        plt.axvline(x=side * len(groups1), color="blue")
+
+        if other is not None:
+            plt.xlim([-2 * side, side * (len(groups1) + len(groups2))])
+
         else:
-            plt.xlim([-2 * side, side * (groups1[-1] + 1)])
+            plt.xlim([-2 * side, side * len(groups1)])
+
         plt.ylim([-side * (max_slot * 5), side])
         plt.axis('off')
         plt.show()
@@ -180,8 +183,6 @@ class Solution:
 
                 if classroom_id_ and teacher_id_:
                     possible_first_slots[(day, slot)] = (classroom_id_, teacher_id_)
-
-        print(possible_first_slots)
 
         for g in groups:
             day, slot = random.choice(list(possible_first_slots.keys()))
@@ -343,9 +344,6 @@ class Solution:
         levels1, levels2 = {i: 0 for i in range(1, 3 + 1)}, {i: 0 for i in range(1, 3 + 1)}
         n1, n2 = 0, 0
 
-        print(len(n_students1), len(n_students2))
-        print(day1, day2)
-
         for (day, slot), group_info in self.solution.items():
             if day != day1:
                 new_sol1[(day, slot)] = group_info
@@ -406,9 +404,6 @@ class Solution:
                             self.working_hours, self.mutation_method, self.crossover_method)
         new_sol2 = Solution(new_sol2, self.possible_slots, self.limit, self.duration, self.classrooms, self.teachers,
                             self.working_hours, self.mutation_method, self.crossover_method)
-
-        print(levels1)
-        print(levels2)
 
         if n_groups1 > n_groups2:
             new_sol1.assign(levels1, idx1 + 1)

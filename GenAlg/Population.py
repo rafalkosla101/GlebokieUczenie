@@ -50,6 +50,7 @@ class Population:
         """
         Selects 2 solutions with different methods
         """
+
         if self._selection_type == Selection.BEST:
             return self._selection_best()
         elif self._selection_type == Selection.ROULETTE:
