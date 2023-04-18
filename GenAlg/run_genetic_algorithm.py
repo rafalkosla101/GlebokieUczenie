@@ -4,11 +4,9 @@ from DataGeneration.generate_data import *
 import matplotlib.pyplot as plt
 
 
-def run_genetic_algorithm(population_size: int,
-                         n_generations: int, 
-                         selection_type: Selection, 
-                         mutation_type: Mutation,
-                         crossover_type: Crossover) -> List[Solution]:
+def run_genetic_algorithm(population_size: int, n_generations: int, selection_type: Selection, mutation_type: Mutation,
+                          crossover_type: Crossover, crossover_prob: float, mutation_prob: float,
+                          alpha: float, beta: float, gamma: float) -> List[Solution]:
     """
     Runs genetic algorithm and returns a result.
     """
@@ -29,7 +27,8 @@ def run_genetic_algorithm(population_size: int,
 
     for _ in range(population_size):
         sol, poss_slots = random_initial_solution(students, limit, duration, classrooms, teachers, working_hours)
-        solution = Solution(sol, poss_slots, limit, duration, classrooms, teachers, working_hours, mutation_type, crossover_type)
+        solution = Solution(sol, poss_slots, limit, duration, classrooms, teachers, working_hours, mutation_type,
+                            crossover_type, crossover_prob, mutation_prob, alpha, beta, gamma)
         initial_population.add(solution)
 
     # Run genetic algorithm

@@ -137,7 +137,12 @@ class Ui_MainWindow(object):
         best_solutions = GenAlg.run_genetic_algorithm.run_genetic_algorithm(20, int(self.lineEdit_10.text()),
                                                            getattr(shared_types.Selection, self.get_selection()),
                                                            getattr(shared_types.Mutation, self.get_mutation()),
-                                                           getattr(shared_types.Crossover, self.get_crossover()))
+                                                           getattr(shared_types.Crossover, self.get_crossover()),
+                                                                            float(self.lineEdit_8.text()),
+                                                                            float(self.lineEdit_9.text()),
+                                                                            float(self.lineEdit_5.text()),
+                                                                            float(self.lineEdit_6.text()),
+                                                                            float(self.lineEdit_7.text()))
         best_solution = min(best_solutions, key=lambda s: s.calculate_fitness())
         best_solution.display()
         GenAlg.run_genetic_algorithm.plot_fitness(best_solutions)

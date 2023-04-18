@@ -1,11 +1,14 @@
 # File with implemented class representing single solution
 # PROJECT PACKAGES
+import copy
+
 from GenAlg.utils import draw_rect
 from GenAlg.shared_types import *
 from DataGeneration.generate_data import *
 
 # BUILT-IN PACKAGES
 import matplotlib.pyplot as plt
+import numpy as np
 
 from copy import deepcopy
 from typing import Optional, Dict, List
@@ -16,8 +19,8 @@ class Solution:
                  solution: Dict[Tuple[Day, Slot], List[Tuple[Group, int]]], 
                  possible_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]], limit: int, duration: int,
                  classrooms: List[Classroom], teachers: List[Teacher], working_hours: Dict[Day, List[Slot]],
-                 mutation_method: Mutation,
-                 crossover_method: Crossover):
+                 mutation_method: Mutation, crossover_method: Crossover, crossover_prob: float, mutation_prob: float,
+                 alpha: float, beta: float, gamma: float):
         self.solution = solution
         self.possible_slots = possible_slots
         self.limit = limit
@@ -27,6 +30,11 @@ class Solution:
         self.working_hours = working_hours
         self.mutation_method = mutation_method
         self.crossover_method = crossover_method
+        self.crossover_prob = crossover_prob
+        self.mutation_prob = mutation_prob
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
 
     def calculate_fitness(self) -> float:
         """
@@ -70,25 +78,35 @@ class Solution:
                     if group.level != student_level:
                         improper_group += group.number_of_students[student_level]
 
-        return BEYOND_HOURS_PENALTY * slots_beyond_preferred_hours + BREAKS_PENALTY * total_breaks + IMPROPER_LEVEL_PENALTY * improper_group
+        return self.alpha * slots_beyond_preferred_hours + self.beta * total_breaks + self.gamma * improper_group
 
     def mutate(self) -> 'Solution':
         """
         Copies solution and returns mutated copy.
         """
-        if self.mutation_method == Mutation.SHIFT:
-            return self._mutate_shift()
-        elif self.mutation_method == Mutation.CHANGE_TEACHER:
-            return self._mutate_change_teacher()
+
+        if random.random() < self.mutation_prob:
+            if self.mutation_method == Mutation.SHIFT:
+                return self._mutate_shift()
+            elif self.mutation_method == Mutation.CHANGE_TEACHER:
+                return self._mutate_change_teacher()
+
+        else:
+            return self
 
     def crossover(self, other: 'Solution') -> Tuple['Solution', 'Solution']:
         """
         Performs crossover with 'other' and returns a Tuple of two solutions.
         """
-        if self.crossover_method == Crossover.ALL_DAY:
-            return self._crossover_all_day(other)
-        elif self.crossover_method == Crossover.SINGLE_BLOCK:
-            return self._crossover_single_block(other)
+
+        if random.random() < self.crossover_prob:
+            if self.crossover_method == Crossover.ALL_DAY:
+                return self._crossover_all_day(other)
+            elif self.crossover_method == Crossover.SINGLE_BLOCK:
+                return self._crossover_single_block(other)
+
+        else:
+            return self, other
 
     def display(self, other: Optional['Solution']=None) -> None:
         """
@@ -144,6 +162,64 @@ class Solution:
         plt.axis('off')
         plt.show()
 
+    def find_possible_slots(self) -> None:
+        """
+        Method to find the current possible slots
+        """
+
+        possible_slots = {}
+        teachers = [teacher.id for teacher in self.teachers]
+        classrooms = [classroom.id for classroom in self.classrooms]
+
+        for (day, slot), group_info in self.solution.items():
+            teachers_ = copy.deepcopy(teachers)
+            classrooms_ = copy.deepcopy(classrooms)
+
+            for group, i in group_info:
+                if group.teacher in teachers_:
+                    teachers_.remove(group.teacher)
+
+                if group.classroom in classrooms_:
+                    classrooms_.remove(group.classroom)
+
+            possible_slots[(day, slot)] = (classrooms_, teachers_)
+
+        self.possible_slots = possible_slots
+
+    def find_possible_first_slots(self) -> Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]]:
+        """
+        Method to find the current possible first slots
+        :return: Possible first slots
+        """
+
+        possible_first_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]] = {}
+        classrooms = [classroom.id for classroom in self.classrooms]
+        teachers = [teacher.id for teacher in self.teachers]
+
+        for day in self.working_hours:
+            for slot in self.working_hours[day][:-self.duration + 1]:
+                classrooms_, teachers_ = deepcopy(classrooms), deepcopy(teachers)
+
+                for j in range(self.duration):
+                    timeslot = (day, slot + j)
+
+                    if timeslot in self.solution:
+                        for group, _ in self.solution[timeslot]:
+                            if group.classroom in classrooms_:
+                                classrooms_.remove(group.classroom)
+
+                            if group.teacher in teachers_:
+                                teachers_.remove(group.teacher)
+
+                    else:
+                        classrooms_, teachers_ = [], []
+
+                if classrooms_ and teachers_:
+                    possible_first_slots[(day, slot)] = (classrooms_, teachers_)
+
+        return possible_first_slots
+
+
     def assign(self, students_by_levels: Dict[int, int], group_id: int) -> None:
         """
         Method to create new groups and assign students to them
@@ -161,68 +237,50 @@ class Solution:
                 groups.append(group)
                 group_id += 1
 
-        groups = connect_groups(groups, self.limit)
-        possible_first_slots: Dict[Tuple[Day, Slot], Tuple[List[Room], List[Lector]]] = {}
-        classroom_id = [c.id for c in self.classrooms]
-        teacher_id = [t.id for t in self.teachers]
+        # groups = connect_groups(groups, self.limit)
+        possible_first_slots = self.find_possible_first_slots()
 
-        for day in self.working_hours:
-            for slot in self.working_hours[day][:-self.duration + 1]:
-                classroom_id_, teacher_id_ = deepcopy(classroom_id), deepcopy(teacher_id)
+        for group in groups:
+            if len(possible_first_slots) == 0:
+                return None
 
-                for i in range(self.duration):
-                    timeslot = (day, slot + i)
-
-                    if timeslot in self.solution:
-                        for group, _ in self.solution[timeslot]:
-                            if group.classroom in classroom_id_:
-                                classroom_id_.remove(group.classroom)
-
-                            if group.teacher in teacher_id_:
-                                teacher_id_.remove(group.teacher)
-
-                if classroom_id_ and teacher_id_:
-                    possible_first_slots[(day, slot)] = (classroom_id_, teacher_id_)
-
-        for g in groups:
             day, slot = random.choice(list(possible_first_slots.keys()))
-            chosen_room = random.choice(possible_first_slots[(day, slot)][0])
-            chosen_teacher = random.choice(possible_first_slots[(day, slot)][1])
-            g.teacher = chosen_teacher
-            g.classroom = chosen_room
 
-            for i in range(self.duration):
-                timeslot = (day, slot + i)
+            while not possible_first_slots[(day, slot)][0] or not possible_first_slots[(day, slot)][1]:
+                return None
+
+            classroom = random.choice(possible_first_slots[(day, slot)][0])
+            teacher = random.choice(possible_first_slots[(day, slot)][1])
+            group.classroom = classroom
+            group.teacher = teacher
+
+            for j in range(self.duration):
+                timeslot = (day, slot + j)
 
                 if timeslot in self.solution:
-                    for group, _ in self.solution[timeslot]:
-                        if group.teacher == chosen_teacher or group.classroom == chosen_room:
-                            break
-
-                    else:
-                        self.solution[timeslot].append((g, i + 1))
+                    self.solution[timeslot].append((group, j + 1))
 
                 else:
-                    self.solution[timeslot] = [(g, i + 1)]
+                    self.solution[timeslot] = [(group, j + 1)]
 
                 if timeslot in possible_first_slots:
-                    if chosen_room in possible_first_slots[timeslot][0]:
-                        possible_first_slots[timeslot][0].remove(chosen_room)
+                    if classroom in possible_first_slots[timeslot][0]:
+                        possible_first_slots[timeslot][0].remove(classroom)
 
-                    if chosen_teacher in possible_first_slots[timeslot][1]:
-                        possible_first_slots[timeslot][1].remove(chosen_teacher)
+                    if teacher in possible_first_slots[timeslot][1]:
+                        possible_first_slots[timeslot][1].remove(teacher)
 
                     if not possible_first_slots[timeslot][0] or not possible_first_slots[timeslot][1]:
                         possible_first_slots.pop(timeslot)
 
-                timeslot = (day, slot - i)
+                timeslot = (day, slot - j)
 
                 if timeslot in possible_first_slots:
-                    if chosen_room in possible_first_slots[timeslot][0]:
-                        possible_first_slots[timeslot][0].remove(chosen_room)
+                    if classroom in possible_first_slots[timeslot][0]:
+                        possible_first_slots[timeslot][0].remove(classroom)
 
-                    if chosen_teacher in possible_first_slots[timeslot][1]:
-                        possible_first_slots[timeslot][1].remove(chosen_teacher)
+                    if teacher in possible_first_slots[timeslot][1]:
+                        possible_first_slots[timeslot][1].remove(teacher)
 
                     if not possible_first_slots[timeslot][0] or not possible_first_slots[timeslot][1]:
                         possible_first_slots.pop(timeslot)
@@ -231,63 +289,97 @@ class Solution:
         new_sol = copy.deepcopy(self.solution)
         new_poss_slots = copy.deepcopy(self.possible_slots)
         possible_slots_to_change = list(new_sol.keys())
+
         while possible_slots_to_change:
             slot_to_change = random.choice(possible_slots_to_change)
             possible_group_to_change = copy.copy(new_sol[slot_to_change])
+
             while possible_group_to_change:
                 group_to_change, slot_number = random.choice(possible_group_to_change)
                 slot_before_group = (slot_to_change[0], slot_to_change[1] - slot_number)
                 slot_after_group = (slot_before_group[0], slot_before_group[1] + 1 + group_to_change.duration)
                 shift_possibilities = []
-                if slot_before_group in new_poss_slots.keys() and group_to_change.teacher in new_poss_slots[slot_before_group][1] and group_to_change.classroom in new_poss_slots[slot_before_group][0]:
+
+                if slot_before_group in new_poss_slots and group_to_change.teacher in new_poss_slots[slot_before_group][1] and group_to_change.classroom in new_poss_slots[slot_before_group][0]:
                     shift_possibilities.append(slot_before_group)
-                if slot_after_group in new_poss_slots.keys() and group_to_change.teacher in new_poss_slots[slot_after_group][1] and group_to_change.classroom in new_poss_slots[slot_after_group][0]:
+
+                if slot_after_group in new_poss_slots and group_to_change.teacher in new_poss_slots[slot_after_group][1] and group_to_change.classroom in new_poss_slots[slot_after_group][0]:
                     shift_possibilities.append(slot_after_group)
+
                 if not shift_possibilities:
                     possible_group_to_change.remove((group_to_change, slot_number))
                     continue
+
                 new_slot = random.choice(shift_possibilities)
+
                 if new_slot == slot_before_group:
-                    if new_slot in new_sol.keys():
+                    if new_slot in new_sol:
                         new_sol[new_slot].append((group_to_change, 1))
+
                     else:
                         new_sol[new_slot] = [(group_to_change, 1)]
-                    for i in range(1, group_to_change.duration):
-                        indx = new_sol[(new_slot[0], new_slot[1] + i)].index((group_to_change, i))
-                        new_sol[(new_slot[0], new_slot[1] + i)][indx] = (group_to_change, i + 1)
-                    new_sol[(new_slot[0], new_slot[1] + group_to_change.duration)].remove((group_to_change, group_to_change.duration))
+
+                    try:
+                        for i in range(1, group_to_change.duration):
+                            indx = new_sol[(new_slot[0], new_slot[1] + i)].index((group_to_change, i))
+                            new_sol[(new_slot[0], new_slot[1] + i)][indx] = (group_to_change, i + 1)
+
+                        new_sol[(new_slot[0], new_slot[1] + group_to_change.duration)].remove((group_to_change, group_to_change.duration))
+                    except:
+                        print(new_slot)
+                        print(new_sol)
+                        self.display()
+
                     if not new_sol[(new_slot[0], new_slot[1] + group_to_change.duration)]:
                         new_sol.pop((new_slot[0], new_slot[1] + group_to_change.duration))
-                    if (new_slot[0], new_slot[1] + group_to_change.duration) in new_poss_slots.keys():
+
+                    if (new_slot[0], new_slot[1] + group_to_change.duration) in new_poss_slots:
                         new_poss_slots[(new_slot[0], new_slot[1] + group_to_change.duration)][0].append(group_to_change.classroom)
                         new_poss_slots[(new_slot[0], new_slot[1] + group_to_change.duration)][1].append(group_to_change.teacher)
+
                     else:
                         new_poss_slots[(new_slot[0], new_slot[1] + group_to_change.duration)] = ([group_to_change.classroom], [group_to_change.teacher])
+
                 elif new_slot == slot_after_group:
-                    if new_slot in new_sol.keys():
-                        new_sol[new_slot].append((group_to_change, group_to_change.duration))
-                    else:
-                        new_sol[new_slot] = [(group_to_change, group_to_change.duration)]
-                    for i in range(group_to_change.duration - 1, 0, -1):
-                        indx = new_sol[(new_slot[0], new_slot[1] - i)].index((group_to_change, group_to_change.duration - i + 1))
-                        new_sol[(new_slot[0], new_slot[1] - i)][indx] = (group_to_change, group_to_change.duration - i)
-                    new_sol[(new_slot[0], new_slot[1] - group_to_change.duration)].remove((group_to_change, 1))
-                    if not new_sol[(new_slot[0], new_slot[1] - group_to_change.duration)]:
-                        new_sol.pop((new_slot[0], new_slot[1] - group_to_change.duration))
-                    if (new_slot[0], new_slot[1] - group_to_change.duration) in new_poss_slots.keys():
-                        new_poss_slots[(new_slot[0], new_slot[1] - group_to_change.duration)][0].append(group_to_change.classroom)
-                        new_poss_slots[(new_slot[0], new_slot[1] - group_to_change.duration)][1].append(group_to_change.teacher)
-                    else:
-                        new_poss_slots[(new_slot[0], new_slot[1] - group_to_change.duration)] = ([group_to_change.classroom], [group_to_change.teacher])
+                    try:
+                        if new_slot in new_sol:
+                            new_sol[new_slot].append((group_to_change, group_to_change.duration))
+
+                        else:
+                            new_sol[new_slot] = [(group_to_change, group_to_change.duration)]
+
+                        for i in range(group_to_change.duration - 1, 0, -1):
+                            indx = new_sol[(new_slot[0], new_slot[1] - i)].index((group_to_change, group_to_change.duration - i + 1))
+                            new_sol[(new_slot[0], new_slot[1] - i)][indx] = (group_to_change, group_to_change.duration - i)
+
+                        new_sol[(new_slot[0], new_slot[1] - group_to_change.duration)].remove((group_to_change, 1))
+
+                        if not new_sol[(new_slot[0], new_slot[1] - group_to_change.duration)]:
+                            new_sol.pop((new_slot[0], new_slot[1] - group_to_change.duration))
+
+                        if (new_slot[0], new_slot[1] - group_to_change.duration) in new_poss_slots:
+                            new_poss_slots[(new_slot[0], new_slot[1] - group_to_change.duration)][0].append(group_to_change.classroom)
+                            new_poss_slots[(new_slot[0], new_slot[1] - group_to_change.duration)][1].append(group_to_change.teacher)
+
+                        else:
+                            new_poss_slots[(new_slot[0], new_slot[1] - group_to_change.duration)] = ([group_to_change.classroom], [group_to_change.teacher])
+                    except Exception as e:
+                        print(f"M2 {e}")
+
                 new_poss_slots[new_slot][0].remove(group_to_change.classroom)
                 new_poss_slots[new_slot][1].remove(group_to_change.teacher)
+
                 if not new_poss_slots[new_slot][0] or not new_poss_slots[new_slot][1]:
                     new_poss_slots.pop(new_slot)
+
                 return Solution(new_sol, new_poss_slots, self.limit, self.duration, self.classrooms, self.teachers,
-                            self.working_hours, self.mutation_method, self.crossover_method)
+                            self.working_hours, self.mutation_method, self.crossover_method, self.crossover_prob,
+                                self.mutation_prob, self.alpha, self.beta, self.gamma)
             possible_slots_to_change.remove(slot_to_change)
+
         return Solution(new_sol, new_poss_slots, self.limit, self.duration, self.classrooms, self.teachers,
-                            self.working_hours, self.mutation_method, self.crossover_method)
+                            self.working_hours, self.mutation_method, self.crossover_method, self.crossover_prob,
+                        self.mutation_prob, self.alpha, self.beta, self.gamma)
     
     def _mutate_change_teacher(self) -> 'Solution':
         new_sol = copy.deepcopy(self.solution)
@@ -317,10 +409,12 @@ class Solution:
                     new_poss_slot[(first_slot[0], first_slot[1] + i)][1].append(prev_teacher)
                     new_poss_slot[(first_slot[0], first_slot[1] + i)][1].remove(chosen_teacher)
                 return Solution(new_sol, new_poss_slot, self.limit, self.duration, self.classrooms, self.teachers,
-                            self.working_hours, self.mutation_method, self.crossover_method)
+                            self.working_hours, self.mutation_method, self.crossover_method, self.crossover_prob,
+                                self.mutation_prob, self.alpha, self.beta, self.gamma)
             possible_slots_to_change.remove(slot_to_change)
         return Solution(new_sol, new_poss_slot, self.limit, self.duration, self.classrooms, self.teachers,
-                            self.working_hours, self.mutation_method, self.crossover_method)
+                            self.working_hours, self.mutation_method, self.crossover_method, self.crossover_prob,
+                        self.mutation_prob, self.alpha, self.beta, self.gamma)
 
     def _crossover_all_day(self, other: 'Solution') -> Tuple['Solution', 'Solution']:
         """
@@ -401,15 +495,20 @@ class Solution:
                             new_sol1[(day1, slot + j)] = [(group_, j + 1)]
 
         new_sol1 = Solution(new_sol1, self.possible_slots, self.limit, self.duration, self.classrooms, self.teachers,
-                            self.working_hours, self.mutation_method, self.crossover_method)
+                            self.working_hours, self.mutation_method, self.crossover_method, self.crossover_prob,
+                            self.mutation_prob, self.alpha, self.beta, self.gamma)
         new_sol2 = Solution(new_sol2, self.possible_slots, self.limit, self.duration, self.classrooms, self.teachers,
-                            self.working_hours, self.mutation_method, self.crossover_method)
+                            self.working_hours, self.mutation_method, self.crossover_method, self.crossover_prob,
+                            self.mutation_prob, self.alpha, self.beta, self.gamma)
 
         if n_groups1 > n_groups2:
             new_sol1.assign(levels1, idx1 + 1)
 
         elif n_groups1 < n_groups2:
             new_sol2.assign(levels2, idx2 + 1)
+
+        new_sol1.find_possible_slots()
+        new_sol2.find_possible_slots()
 
         return new_sol1, new_sol2
 
@@ -420,135 +519,100 @@ class Solution:
         """
 
         new_sol1, new_sol2 = {}, {}
-        day1, slot1, group_id1 = random.choice([(day, slot, group.id) for day, slot in self.solution for group, i in self.solution[(day, slot)] if i == 1])
-        day2, slot2, group_id2 = random.choice([(day, slot, group.id) for day, slot in other.solution for group, i in other.solution[(day, slot)] if i == 1])
+        day1, slot1, group1 = random.choice([(day, slot, group) for day, slot in self.solution for group, i in self.solution[(day, slot)] if i == 1])
+        day2, slot2, group2 = random.choice([(day, slot, group) for day, slot in other.solution for group, i in other.solution[(day, slot)] if i == 1])
         idx1 = max([group.id for timeslot in other.solution for group, _ in other.solution[timeslot]])
         idx2 = max([group.id for timeslot in self.solution for group, _ in self.solution[timeslot]])
-        n_students1 = [group.number_of_students for day, slot in self.solution
-                       for group, i in self.solution[(day, slot)] if day == day1 and group.id == group_id1 and i == 1][0]
-        n_students2 = [group.number_of_students for day, slot in other.solution
-                       for group, i in other.solution[(day, slot)] if day == day2 and group.id == group_id2 and i == 1][0]
+        n_students1 = [group.number_of_students for day, slot in other.solution
+                       for group, i in other.solution[(day, slot)] if day == day2 and group.id == group2.id and i == 1][0]
+        n_students2 = [group.number_of_students for day, slot in self.solution
+                       for group, i in self.solution[(day, slot)] if day == day1 and group.id == group1.id and i == 1][0]
         levels1, levels2 = {i: 0 for i in range(1, 3 + 1)}, {i: 0 for i in range(1, 3 + 1)}
-        group1, group2 = None, None
-
-        print(day1, day2)
-        print(slot1, slot2)
 
         for (day, slot), group_info in self.solution.items():
-            if day != day1:
+            if day == day2:
+                for group, i in group_info:
+                    if i != 1:
+                        continue
+
+                    if (group.classroom == group2.classroom or group.teacher == group2.teacher) and abs(slot - slot2) < self.duration:
+                        for level, num in group.number_of_students.items():
+                            levels1[level] += num
+
+                    else:
+                        for j in range(group.duration):
+                            if (day, slot + j) in new_sol1:
+                                new_sol1[(day, slot + j)].append((group, j + 1))
+
+                            else:
+                                new_sol1[(day, slot + j)] = [(group, j + 1)]
+
+            elif day != day1 and day != day2:
                 new_sol1[(day, slot)] = group_info
-                continue
 
-            for group, i in group_info:
-                if i != 1:
-                    continue
+            else:
+                for group, i in group_info:
+                    if i != 1:
+                        continue
 
-                if group.id == group_id1:
-                    # for level, num in group.number_of_students.items():
-                    #     levels1[level] += num
+                    if group.id != group1.id:
+                        for j in range(group.duration):
+                            if (day, slot + j) in new_sol1:
+                                new_sol1[(day, slot + j)].append((group, j + 1))
 
-                    group1 = deepcopy(group)
-                    group1.id = idx1 + 1
-                    group1.number_of_students = n_students2
-
-                else:
-                    for j in range(group.duration):
-                        if (day1, slot + j) in new_sol1:
-                            new_sol1[(day1, slot + j)].append((group, j + 1))
-
-                        else:
-                            new_sol1[(day1, slot + j)] = [(group, j + 1)]
+                            else:
+                                new_sol1[(day, slot + j)] = [(group, j + 1)]
 
         for (day, slot), group_info in other.solution.items():
-            if day != day2:
-                new_sol2[(day, slot)] = group_info
-                continue
+            if day == day1:
+                for group, i in group_info:
+                    if i != 1:
+                        continue
 
-            for group, i in group_info:
-                if i != 1:
-                    continue
-
-                if group.id == group_id2:
-                    # for level, num in group.number_of_students.items():
-                    #     levels2[level] += num
-
-                    group2 = deepcopy(group)
-                    group2.id = idx2 + 1
-                    group2.number_of_students = n_students1
-
-                else:
-                    for j in range(group.duration):
-                        if (day2, slot + j) in new_sol2:
-                            new_sol2[(day2, slot + j)].append((group, j + 1))
-
-                        else:
-                            new_sol2[(day2, slot + j)] = [(group, j + 1)]
-
-
-        to_delete2 = []
-
-        for j in range(self.duration):
-            if (day1, slot1 + j) in new_sol2:
-                for group, i in new_sol2[(day1, slot1 + j)]:
-                    if group.classroom == group1.classroom or group.teacher == group1.teacher:
-                        to_delete2.append((day1, slot1 + j - i + 1, group.id))
-
+                    if (group.classroom == group1.classroom or group.teacher == group1.teacher) and abs(slot - slot1) < self.duration:
                         for level, num in group.number_of_students.items():
                             levels2[level] += num
 
-        to_delete2 = list(set(to_delete2))
-
-        for day, slot, group_id in to_delete2:
-            for j in range(self.duration):
-                if (day, slot + j) in new_sol2:
-                    group_info = []
-
-                    for group, i in new_sol2[(day, slot + j)]:
-                        if group.id != group_id:
-                            group_info.append((group, i))
-
-                    if group_info:
-                        new_sol2[(day, slot + j)] = group_info
-
                     else:
-                        del new_sol2[(day, slot + j)]
+                        for j in range(group.duration):
+                            if (day, slot + j) in new_sol2:
+                                new_sol2[(day, slot + j)].append((group, j + 1))
+
+                            else:
+                                new_sol2[(day, slot + j)] = [(group, j + 1)]
+
+            elif day != day2 and day != day1:
+                new_sol2[(day, slot)] = group_info
+
+            else:
+                for group, i in group_info:
+                    if i != 1:
+                        continue
+
+                    if group.id != group2.id:
+                        for j in range(group.duration):
+                            if (day, slot + j) in new_sol2:
+                                new_sol2[(day, slot + j)].append((group, j + 1))
+
+                            else:
+                                new_sol2[(day, slot + j)] = [(group, j + 1)]
+
+        idx1 += 1
+        idx2 += 1
 
         for j in range(self.duration):
+            group1.id = idx1
+            group1.number_of_students = n_students1
+
             if (day1, slot1 + j) in new_sol2:
                 new_sol2[(day1, slot1 + j)].append((group1, j + 1))
 
             else:
                 new_sol2[(day1, slot1 + j)] = [(group1, j + 1)]
 
-        to_delete1 = []
+            group2.id = idx2
+            group2.number_of_students = n_students2
 
-        for j in range(self.duration):
-            if (day2, slot2 + j) in new_sol1:
-                for group, i in new_sol1[(day2, slot2 + j)]:
-                    if group.classroom == group2.classroom or group.teacher == group2.teacher:
-                        to_delete1.append((day2, slot2 + j - i + 1, group.id))
-
-                        for level, num in group.number_of_students.items():
-                            levels1[level] += num
-
-        to_delete1 = list(set(to_delete2))
-
-        for day, slot, group_id in to_delete1:
-            for j in range(self.duration):
-                if (day, slot + j) in new_sol1:
-                    group_info = []
-
-                    for group, i in new_sol1[(day, slot + j)]:
-                        if group.id != group_id:
-                            group_info.append((group, i))
-
-                    if group_info:
-                        new_sol1[(day, slot + j)] = group_info
-
-                    else:
-                        del new_sol1[(day, slot + j)]
-
-        for j in range(self.duration):
             if (day2, slot2 + j) in new_sol1:
                 new_sol1[(day2, slot2 + j)].append((group2, j + 1))
 
@@ -556,18 +620,16 @@ class Solution:
                 new_sol1[(day2, slot2 + j)] = [(group2, j + 1)]
 
         new_sol1 = Solution(new_sol1, self.possible_slots, self.limit, self.duration, self.classrooms, self.teachers,
-                            self.working_hours, self.mutation_method, self.crossover_method)
+                            self.working_hours, self.mutation_method, self.crossover_method, self.crossover_prob,
+                            self.mutation_prob, self.alpha, self.beta, self.gamma)
         new_sol2 = Solution(new_sol2, self.possible_slots, self.limit, self.duration, self.classrooms, self.teachers,
-                            self.working_hours, self.mutation_method, self.crossover_method)
+                            self.working_hours, self.mutation_method, self.crossover_method, self.crossover_prob,
+                            self.mutation_prob, self.alpha, self.beta, self.gamma)
+        new_sol1.assign(levels1, idx1 + 1)
+        new_sol2.assign(levels2, idx2 + 1)
 
-        for i in range(len(to_delete2)):
-            new_sol2.assign(levels2, idx1 + i + 1)
-
-        for i in range(len(to_delete1)):
-            new_sol1.assign(levels1, idx2 + i + 1)
-
-        print(levels1)
-        print(levels2)
+        new_sol1.find_possible_slots()
+        new_sol2.find_possible_slots()
 
         return new_sol1, new_sol2
 

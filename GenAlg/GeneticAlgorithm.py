@@ -3,6 +3,8 @@
 from GenAlg.Population import Population, Solution
 from GenAlg.shared_types import List
 
+import numpy as np
+
 
 class GeneticAlgorithm:
     """
@@ -18,36 +20,35 @@ class GeneticAlgorithm:
         """
         Method for solving problem with genetic algorithm.
         """
+
         best_solutions: List[Solution] = []
         current_population = Population(self._initial_population._population, self._initial_population._selection_type)
+
         for i in range(self._n_generations):
             best_solutions.append(current_population.get_best_solution())
             new_population = Population([], self._initial_population._selection_type)
 
-
-            print(f"ITERATION: {i}")
-
             for j in range(0, self._population_size, 2):
-
-                print(f"PAIR: {j}")
-
-                print("Selection")
 
                 # Selection
                 selected_a, selected_b = current_population.selection()
 
-                print("Crossover")
-
                 # Crossover
-                crossovered_a, crossovered_b = selected_a.crossover(selected_b)
-
-                print("Mutation")
+                try:
+                    crossovered_a, crossovered_b = selected_a.crossover(selected_b)
+                except Exception as e:
+                    print(f"[CROSSOVER]\t{e}")
+                    crossovered_a = selected_a
+                    crossovered_b = selected_b
 
                 # Mutation
-                mutated_a = crossovered_a.mutate()
-                mutated_b = crossovered_b.mutate()
-
-                print("Finish")
+                try:
+                    mutated_a = crossovered_a.mutate()
+                    mutated_b = crossovered_b.mutate()
+                except Exception as e:
+                    print(f"[MUTATION]\t{e}")
+                    mutated_a = crossovered_a
+                    mutated_b = crossovered_b
 
                 # Add to new population
                 new_population.add(mutated_a)
