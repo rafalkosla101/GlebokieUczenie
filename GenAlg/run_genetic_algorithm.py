@@ -19,7 +19,7 @@ def run_genetic_algorithm(population_size: int, n_generations: int, selection_ty
     limit = school_config["limit"]
     duration = school_config["duration"]
     working_hours_temp = school_config["working_hours"]
-    classrooms = [Classroom() for _ in range(school_config["number_of_classrooms"])]
+    classrooms = [Classroom(i) for i in range(school_config["number_of_classrooms"])]
     # Convert type of day in working_hours from str to int
     working_hours = {int(day): working_hours_temp[day] for day in working_hours_temp.keys()}
     # Prepare initial Population

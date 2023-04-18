@@ -63,9 +63,10 @@ class Classroom:
 
     # id sali nadawane automatycznie, seats - liczba miejsc
     # def __init__(self, seating_capacity):
-    def __init__(self):
-        self.id = Classroom.id_counter
-        Classroom.id_counter += 1
+    def __init__(self, classroom_id: int):
+        #self.id = Classroom.id_counter
+        #Classroom.id_counter += 1
+        self.id = classroom_id
         # self.seating_capacity = seating_capacity
 
         # jeśli pojemność każdej sali jest taka sama można dać const
@@ -76,9 +77,10 @@ class Teacher:
     id_counter = 0
 
     # id nadawane automatycznie, preferowane godziny jako lista slotów (chyba że ma być jakoś inaczej) - dodałam że to słownik, bo grupa nie może mieć np. 15min w poniedziałek i 45 min we wtorek
-    def __init__(self, preferred_hours: Dict[int, List[int]]):
-        self.id = Teacher.id_counter
-        Teacher.id_counter += 1
+    def __init__(self, preferred_hours: Dict[int, List[int]], teacher_id: int):
+        #self.id = Teacher.id_counter
+        #Teacher.id_counter += 1
+        self.id = teacher_id
         self.preferred_hours = preferred_hours
 
     # dodawanie slotu do preferowanych godzin

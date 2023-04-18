@@ -15,9 +15,9 @@ from copy import deepcopy
 students = [1, 1, 2, 3, 1, 2, 3, 1, 2, 3, 3, 3, 2, 1, 1, 1, 1]
 limit = 3
 duration = 4
-classoom = [Classroom(), Classroom(), Classroom()]
-teacher = [Teacher({1: [1, 2, 3, 4, 5, 6], 2: [2, 3, 4, 5], 4: [1, 2, 3, 4]}),
-           Teacher({2: [1, 2, 3, 4], 3: [2, 3, 4, 5], 5: [1, 2, 3, 4, 5, 6, 7, 8]})]
+#classoom = [Classroom(), Classroom(), Classroom()]
+#teacher = [Teacher({1: [1, 2, 3, 4, 5, 6], 2: [2, 3, 4, 5], 4: [1, 2, 3, 4]}),
+           #Teacher({2: [1, 2, 3, 4], 3: [2, 3, 4, 5], 5: [1, 2, 3, 4, 5, 6, 7, 8]})]
 working_hours = {1: [1, 2, 3, 4, 5, 6, 7, 8], 2: [1, 2, 3, 4, 5, 6, 7, 8], 3: [1, 2, 3, 4, 5, 6, 7, 8],
                  4: [1, 2, 3, 4, 5, 6, 7, 8], 5: [1, 2, 3, 4, 5, 6, 7, 8]}
 
@@ -27,7 +27,7 @@ def load_from_csv(path_to_file: str):
 
 
 def generate_classrooms(number_of_classrooms: int):
-    return [Classroom() for _ in range(0, number_of_classrooms)]
+    return [Classroom(i) for i in range(0, number_of_classrooms)]
 
 
 def generate_working_hours(number_of_hours: int):
@@ -39,7 +39,7 @@ def generate_students(number_of_students: int, students_range: int):
 
 
 def generate_teachers(number_of_teachers: int, slots_per_day: int, slots_per_hour: int):
-    return [Teacher(generate_teacher(slots_per_day, slots_per_hour)) for i in range(0, number_of_teachers)]
+    return [Teacher(generate_teacher(slots_per_day, slots_per_hour), i) for i in range(0, number_of_teachers)]
 
 
 def generate_teacher(slots_per_day: int, slots_per_hour: int):
@@ -80,7 +80,7 @@ def prepare_teachers_list() -> List:
     Returns list of dictionaries
     """
     csv_df = pd.read_csv("DataGeneration/teachers.csv", delimiter=',', index_col=0)
-    teachers_list = [Teacher({day_id + 1: csv_df[col].iloc[day_id] for day_id in range(len(csv_df))}) for col in
+    teachers_list = [Teacher({day_id + 1: csv_df[col].iloc[day_id] for day_id in range(len(csv_df))}, col) for col in
                      csv_df.columns]
     for teacher in teachers_list:
         teacher.delete_empty_lists()
