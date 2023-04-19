@@ -21,7 +21,7 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
-        self.lineEdit_5 = QtWidgets.QLineEdit(self.centralwidget, text='3')
+        self.lineEdit_5 = QtWidgets.QLineEdit(self.centralwidget, text='0.55')
         self.lineEdit_5.setGeometry(QtCore.QRect(40, 100, 113, 22))
         self.lineEdit_5.setObjectName("lineEdit_5")
 
@@ -29,7 +29,7 @@ class Ui_MainWindow(object):
         self.label_5.setGeometry(QtCore.QRect(40, 80, 111, 16))
         self.label_5.setObjectName("label_5")
 
-        self.lineEdit_6 = QtWidgets.QLineEdit(self.centralwidget, text='1')
+        self.lineEdit_6 = QtWidgets.QLineEdit(self.centralwidget, text='0.3')
         self.lineEdit_6.setGeometry(QtCore.QRect(170, 100, 113, 22))
         self.lineEdit_6.setObjectName("lineEdit_6")
 
@@ -37,7 +37,7 @@ class Ui_MainWindow(object):
         self.label_6.setGeometry(QtCore.QRect(170, 80, 81, 16))
         self.label_6.setObjectName("label_6")
 
-        self.lineEdit_7 = QtWidgets.QLineEdit(self.centralwidget, text='3')
+        self.lineEdit_7 = QtWidgets.QLineEdit(self.centralwidget, text='0.15')
         self.lineEdit_7.setGeometry(QtCore.QRect(300, 100, 113, 22))
         self.lineEdit_7.setObjectName("lineEdit_7")
 
@@ -45,7 +45,7 @@ class Ui_MainWindow(object):
         self.label_7.setGeometry(QtCore.QRect(300, 80, 81, 16))
         self.label_7.setObjectName("label_7")
 
-        self.lineEdit_8 = QtWidgets.QLineEdit(self.centralwidget, text='0.9')
+        self.lineEdit_8 = QtWidgets.QLineEdit(self.centralwidget, text='0.5')
         self.lineEdit_8.setGeometry(QtCore.QRect(660, 40, 113, 22))
         self.lineEdit_8.setObjectName("lineEdit_8")
 
@@ -65,7 +65,7 @@ class Ui_MainWindow(object):
         self.label_10.setGeometry(QtCore.QRect(660, 130, 111, 16))
         self.label_10.setObjectName("label_10")
 
-        self.lineEdit_10 = QtWidgets.QLineEdit(self.centralwidget, text='10')
+        self.lineEdit_10 = QtWidgets.QLineEdit(self.centralwidget, text='20')
         self.lineEdit_10.setGeometry(QtCore.QRect(660, 150, 113, 22))
         self.lineEdit_10.setObjectName("lineEdit_10")
 
